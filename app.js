@@ -1,45 +1,58 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
 const app = express();
 
-const mongoose = require("mongoose");
-const httpStatusText = require("./utils/httpStatusText");
 const url = process.env.MONGO_URL;
+const port = process.env.PORT || 4000;
 
-mongoose.connect(url).then(() => {
-  console.log("mongodb sever started");
-});
+if (!url) {
+  console.error("MONGO_URL is not defined in the environment variables.");
+  process.exit(1);
+}
 
+mongoose.connect(url)
+  .then(() => {
+    console.log("MongoDB server started");
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-const eventRouter = require("./routes/eventsRoute");
+// Routes
+const usersRouter = require('./routes/usersRouter');
+const authRouter = require('./routes/authRouter');
+const placesRouter = require("./routes/placesRouter");
+const eventsRouter = require('./routes/eventsRouter');
+const profileRouter = require('./routes/profileRouter'); // Import profileRouter
 
-app.use("/api/events", eventRouter);
+app.use("/api/places", placesRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/auth', authRouter);
+app.use("/api/events", eventsRouter);
+app.use("/api/profile", profileRouter); // Use profileRouter
 
-// Global Middleware for not found router
-app.all("*", (req, res, next) => {
-  return res
-    .status(404)
-    .json({
-      status: httpStatusText.ERROR,
-      message: "this is resourse is not avilable",
-    });
+// Health Check Route
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'Server is running' });
 });
 
-// Global error handdler
-app.use((error, req, res, next) => {
-  const statusCode = error.statusCode || 500;
-  const message = error.message || "An unexpected error occurred";
-  return res.status(statusCode).json({
-    status: error.statusText || httpStatusText.ERROR,
-    message: error.message,
-    code: error.statusCode || 500,
-    data: null
-  });
+// Global middleware for not found routes
+app.all('*', (req, res) => {
+  res.status(404).json({ status: 'ERROR', message: 'Resource not found' });
 });
 
-app.listen(process.env.PORT || 4000, () => {
-  console.log("listen on port 4000");
+// Global error handler
+const errorHandler = require('./middlewares/errorHandler');
+app.use(errorHandler);
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Listening on port ${port}`);
 });
