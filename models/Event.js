@@ -1,16 +1,17 @@
-const { required } = require('joi')
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 
 const eventSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    price: {
-        type: Number,
-        required: true
-    }
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  date: { type: Date, required: true },
+  place: { type: mongoose.Schema.Types.ObjectId, ref: "Place", required: true },
+  organizer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model('Event', eventSchema)
+const Event = mongoose.model("Event", eventSchema);
+module.exports = Event;
