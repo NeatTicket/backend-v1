@@ -1,0 +1,9 @@
+node_modules
+client
+uploads
+.env
+.git
+.dockerignore
+Dockerfile
+docker-compose.yml
+README.md

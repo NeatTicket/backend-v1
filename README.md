@@ -8,27 +8,32 @@ Built with modern technologies and a striking "Glassmorphism" aesthetic, NeatTic
 
 ## 🚀 Vision
 The project bridges the gap between digital convenience and real-world experiences. Whether it's a concert, a workshop, or a private lounge, NeatTicket provides the infrastructure for:
-- **Discovery**: Users find the best events around them.
-- **Organization**: Event organizers manage attendees and logistics.
-- **Hosting**: Venue owners monetize and manage their physical spaces.
-- **Administration**: A centralized dashboard for global oversight.
+- **Discovery**: Users find the best events around them with advanced search and filters.
+- **Organization**: Event organizers manage attendees, ticket sales, and venue availability.
+- **Hosting**: Venue owners monetize and manage their physical spaces with multi-photo galleries.
+- **Administration**: A centralized dashboard for user management, global oversight, and approval workflows.
 
 ---
 
-## 🛠️ Technology Stack
-- **Backend**: Node.js, Express, MongoDB with Mongoose.
-- **Validation**: Joi (providing robust, schema-based data integrity).
-- **Authentication**: JWT (JSON Web Tokens) with role-based access control.
-- **Frontend**: React + Vite, powered by SWR for efficient state management and data fetching.
-- **UI/UX**: Custom CSS with CSS Variables for theme support (Light/Dark mode), smooth micro-animations, and glassmorphism.
-- **Media**: Robust multi-photo upload system via Multer.
+## � Docker Setup (Recommended)
+
+You can run the entire NeatTicket stack (Frontend, Backend, and MongoDB) without installing dependencies locally:
+
+1. **Start the containers**:
+   ```bash
+   docker-compose up --build -d
+   ```
+
+2. **Access the application**:
+   - **Web Interface**: [http://localhost:5173](http://localhost:5173)
+   - **Backend API**: [http://localhost:4000/api](http://localhost:4000/api)
 
 ---
 
 ## ✨ Key Features
 
 ### 1. Secure Multi-Role Authentication
-Four distinct roles with tailored permissions:
+Four distinct roles with tailored permissions and **Generic Security** (no user enumeration on login):
 - **User**: Search, discover, and book tickets.
 - **Place Owner**: Add and manage venues (requires admin approval).
 - **Event Organizer**: Create events, select venues, and track sales (requires admin approval).
@@ -47,50 +52,32 @@ Four distinct roles with tailored permissions:
 ### 4. Integrated Notification Center
 Users receive real-time updates regarding their account status, ticket bookings, and approval/rejection of their submitted venues or events.
 
+### 5. Advanced Administration & Stats
+- **Global Overview**: Admins can see total users, active venues, and revenue stats (if applicable).
+- **User Management**: Approve organizers and place owners to ensure platform quality.
+
 ---
 
 ## 🔍 Feature Deep-Dive (Code Snippets)
 
-### 📸 Multi-Photo Upload Logic
-Both venues and events support multiple images. This is handled by a robust Multer configuration and a dedicated database schema.
+### 🛡️ Generic Login Security
+To prevent user enumeration, we use generic error messages for both non-existent users and incorrect passwords.
 
 ```javascript
-// models/Place.js Snippet
-const placeSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  images: [{ type: String }], // Array of strings to store multiple image paths
-  location: { type: String, required: true },
-  // ... other fields
-});
+// services/authService.js
+static async login(email, password) {
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new AppError("Invalid email or password", 401);
+    }
 
-// controllers/placesController.js Snippet
-const handleSavePlace = async (req, res) => {
-    const images = req.files ? req.files.map(file => `/uploads/places/${file.filename}`) : [];
-    const placeData = { ...req.body, images };
-    // Logic to save or update place...
-};
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+        throw new AppError("Invalid email or password", 401);
+    }
+    // ...
+}
 ```
-
-### 🛡️ Robust Validation with Joi
-We switched from simple validators to **Joi** to ensure complex data structures are always valid before hitting the database.
-
-```javascript
-// validators/authValidator.js
-const registerValidation = Joi.object({
-  firstName: Joi.string().required(),
-  lastName: Joi.string().required(),
-  email: Joi.string().email().required(),
-  password: Joi.string()
-    .min(8)
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])/) // Complex password requirement
-    .required(),
-  role: Joi.string().valid('user', 'place_owner', 'event_organizer', 'admin')
-});
-```
-
----
-
-## 🧠 Business Logic (Behind the Scenes)
 
 ### 🎟️ Atomic Ticket Booking (Race Condition Security)
 To prevent two users from buying the last ticket simultaneously, we use a single MongoDB operation to check availability and increment the count in one step.
@@ -100,10 +87,9 @@ To prevent two users from buying the last ticket simultaneously, we use a single
 const event = await Event.findOneAndUpdate(
   {
     _id: eventId,
-    // Condition: Check if current ticketsSold + requested quantity is <= maxTickets
     $expr: { $lte: [{ $add: ["$ticketsSold", qty] }, "$maxTickets"] }
   },
-  { $inc: { ticketsSold: qty } }, // Atomically increment sold count
+  { $inc: { ticketsSold: qty } },
   { new: true }
 );
 
@@ -112,54 +98,26 @@ if (!event) {
 }
 ```
 
-### 🔔 Automated Notifications
-The system proactively informs users about the status of their requests.
-
-```javascript
-// utils/notify.js
-const notify = async ({ userId, type, title, message, link }) => {
-    try {
-        await Notification.create({ user: userId, type, title, message, link });
-    } catch (err) {
-        console.error("Notification failed", err.message);
-    }
-};
-
-// Usage in place approval:
-await notify({
-  userId: place.owner,
-  type: 'approval',
-  title: 'Venue Approved!',
-  message: `Your venue "${place.name}" has been approved.`,
-  link: '/my_venues'
-});
-```
-
 ---
 
 ## 🎨 UI Aesthetics
-NeatTicket uses a custom-built design system:
+NeatTicket uses a custom-built design system with brand new **NeatTicket Logo**:
 - **Glassmorphism**: Using `backdrop-filter: blur()` and semi-transparent backgrounds for a premium feel.
 - **Dynamic Theming**: Support for both Dark and Light modes using CSS variables.
-- **Interactivity**: Smooth CSS transitions and hover effects on every card and button.
+- **Premium Branding**: Custom favicon and global site title.
 
 ---
 
-## 🛠️ Setup & Installation
+## 🛠️ Manual Installation (Development)
 
-1. **Clone & Install**:
+1. **Install Dependencies**:
    ```bash
    npm install
    cd client && npm install
    ```
 
 2. **Environment Configuration**:
-   Create a `.env` in the root with:
-   ```env
-   MONGO_URL=your_mongodb_url
-   JWT_SECRET=your_jwt_secret
-   PORT=4000
-   ```
+   Create a `.env` in the root with your MongoDB credentials and JWT secrets.
 
 3. **Run**:
    - Backend: `npm run dev`

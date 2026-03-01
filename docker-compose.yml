@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: neatticket_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: neatticket_api
+    ports:
+      - "4000:4000"
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017/neatticket
+      - JWT_SECRET=change-this-in-production
+      - PORT=4000
+    depends_on:
+      - mongodb
+    volumes:
+      - ./uploads:/usr/src/app/uploads
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: neatticket_web
+    ports:
+      - "5173:5173"
+    # Note: VITE_API_URL should point to how the browser reaches the API
+    environment:
+      - VITE_API_URL=http://localhost:4000/api
+    depends_on:
+      - backend
+
+volumes:
+  mongodb_data:

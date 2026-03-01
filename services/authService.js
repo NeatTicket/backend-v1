@@ -14,12 +14,12 @@ class AuthService {
     static async login(email, password) {
         const user = await User.findOne({ email });
         if (!user) {
-            throw new AppError("User not found", 404, "Not Found");
+            throw new AppError("Invalid email or password", 401, "Unauthorized");
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            throw new AppError("Invalid credentials", 401, "Unauthorized");
+            throw new AppError("Invalid email or password", 401, "Unauthorized");
         }
 
         const token = jwt.sign({ userId: user._id, role: user.role }, config.jwt.secret, { expiresIn: "8h" });
