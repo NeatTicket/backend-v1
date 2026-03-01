@@ -574,23 +574,70 @@ export function MyEventsView({ profile, events, places, editingEventId, setEditi
 export function UserManagementView({ operators, onToggleApprove }) {
     return (
         <div className="animate-fade-in">
-            <h3 style={{ marginBottom: 20 }}>Providers Awaiting Verification</h3>
+            <h3 style={{ marginBottom: 28, fontSize: '1.5rem', fontWeight: 800 }}>Providers Awaiting Verification</h3>
             <div className="grid">
                 {operators.map(op => (
-                    <div key={op._id} className="panel highlight-panel">
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div key={op._id} className="panel highlight-panel" style={{
+                        padding: 24,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: 200,
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                             <div>
-                                <h4 style={{ margin: 0 }}>{op.firstName} {op.lastName}</h4>
-                                <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{op.email} • Role: <strong>{op.role}</strong></div>
+                                <h4 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 700 }}>{op.firstName} {op.lastName}</h4>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <span>{op.email}</span>
+                                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent)', fontWeight: 700 }}>{op.role.replace('_', ' ')}</span>
+                                </div>
                             </div>
-                            {op.isApproved ? null : <span className={`status-badge ${op.isApproved ? "approved" : "pending"}`}>{op.isApproved ? "Verified" : "Pending"}</span>}
+
+                            {!op.isApproved && (
+                                <span className="status-badge pending" style={{
+                                    padding: '4px 10px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    borderRadius: 8
+                                }}>Pending</span>
+                            )}
+                            {op.isApproved && (
+                                <span className="status-badge approved" style={{
+                                    padding: '4px 10px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    borderRadius: 8
+                                }}>Verified</span>
+                            )}
                         </div>
-                        <button className={`btn btn-sm ${op.isApproved ? "btn-ghost" : "btn-primary"}`} style={{ width: '100%', marginTop: 16 }} onClick={() => onToggleApprove(op._id, op.isApproved)}>
-                            {op.isApproved ? "Revoke Verification" : "Verify Account"}
-                        </button>
+
+                        <div style={{ marginTop: 'auto' }}>
+                            <button
+                                className={`btn ${op.isApproved ? "btn-ghost" : "btn-primary"}`}
+                                style={{
+                                    width: '100%',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    height: 44,
+                                    border: op.isApproved ? '1px solid var(--border)' : 'none'
+                                }}
+                                onClick={() => onToggleApprove(op._id, op.isApproved)}
+                            >
+                                {op.isApproved ? "Revoke Verification" : "Verify Account"}
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
+            {operators.length === 0 && (
+                <div className="panel" style={{ textAlign: 'center', padding: '60px', opacity: 0.6 }}>
+                    No providers found.
+                </div>
+            )}
         </div>
     );
 }
