@@ -79,9 +79,11 @@ body {
   padding: 0 10px 32px;
 }
 
-.sidebar-logo svg {
+.sidebar-logo svg,
+.sidebar-logo img {
   width: 32px;
   height: 32px;
+  object-fit: contain;
   stroke: var(--accent);
   fill: none;
   stroke-width: 2.5;
