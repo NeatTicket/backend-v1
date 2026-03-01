@@ -40,7 +40,7 @@ export function LoginView({ loginForm, setLoginForm, onLogin, changeView }) {
         <div className="auth-container animate-fade-in">
             <div className="panel auth-card" style={{ maxWidth: 420, margin: '40px auto' }}>
                 <div style={{ textAlign: 'center', marginBottom: 30 }}>
-                    <div className="logo-box" style={{ margin: '0 auto 16px', width: 48, height: 48 }}><Icon.Logo style={{ width: '48px', height: '48px' }} /></div>
+
                     <h2>Welcome Back</h2>
                     <p style={{ color: 'var(--muted)', marginTop: 8 }}>Sign in to continue to NeatTicket</p>
                 </div>

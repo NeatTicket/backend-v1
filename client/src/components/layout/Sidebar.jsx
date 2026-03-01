@@ -4,8 +4,7 @@ import { Icon } from '../common/Icons';
 export function Sidebar({ view, changeView, profile, authHeadersExist, clearSession }) {
     return (
         <aside className="sidebar">
-            <div className="sidebar-logo" onClick={() => changeView("overview")} style={{ cursor: "pointer" }}>
-                <Icon.Logo />
+            <div className="sidebar-logo" onClick={() => changeView("overview")} style={{ cursor: "pointer", paddingBottom: 20 }}>
                 <h1 className="brand-name">NeatTicket</h1>
             </div>
 
