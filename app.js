@@ -21,12 +21,12 @@ app.use(helmet({
 
 // 2. Setup strict CORS
 const allowedOrigins = config.env === 'production'
-  ? ['https://yourproductiondomain.com']
+  ? [/https:\/\/.*\.vercel\.app$/, 'https://neatticket.com']
   : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5173'];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin))) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
