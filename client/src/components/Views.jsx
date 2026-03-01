@@ -623,7 +623,9 @@ export function UserManagementView({ operators, onToggleApprove }) {
                                     fontWeight: 700,
                                     fontSize: '0.85rem',
                                     height: 44,
-                                    border: op.isApproved ? '1px solid var(--border)' : 'none'
+                                    border: op.isApproved ? '1px solid rgba(239, 68, 68, 0.2)' : 'none',
+                                    color: op.isApproved ? 'var(--bad)' : '#fff',
+                                    background: op.isApproved ? 'rgba(239, 68, 68, 0.05)' : 'var(--accent)'
                                 }}
                                 onClick={() => onToggleApprove(op._id, op.isApproved)}
                             >
