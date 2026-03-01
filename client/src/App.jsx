@@ -218,7 +218,7 @@ export default function App() {
 
           {view === "overview" && <Views.Overview profile={profile} stats={statsData} publicStats={publicStats} authHeadersExist={authHeadersExist} changeView={changeView} places={places} getImgUrl={getImgUrl} setSelectedPlace={setSelectedPlace} />}
           {view === "places" && <div className="grid animate-fade-in">{places.map(p => <VenueCard key={p._id} p={p} profile={profile} getImgUrl={getImgUrl} onSelect={() => setSelectedPlace(p)} onEdit={() => { setEditingPlaceId(p._id); setPlaceForm(p); changeView("my_venues"); }} onDelete={() => { setDeleteId(p._id); setDeleteType("place"); setIsDeleteModalOpen(true); }} />)}</div>}
-          {view === "events" && <div className="grid animate-fade-in">{events.filter(ev => ev.status === "approved").map(ev => <EventCard key={ev._id} ev={ev} profile={profile} onBook={() => run(() => axiosInstance.post(`/tickets/events/${ev._id}`, { quantity: 1 }).then(() => { mutateEvents(); mutateTickets(); setMessage("Ticket Booked!"); }))} onShare={handleShare} onViewDetails={(e) => navigate(`/events/${e._id}`)} getTicketStatusBadge={getTicketStatusBadge} />)}</div>}
+          {view === "events" && <div className="grid animate-fade-in">{events.filter(ev => ev.status === "approved").map(ev => <EventCard key={ev._id} ev={ev} profile={profile} getImgUrl={getImgUrl} onBook={() => run(() => axiosInstance.post(`/tickets/events/${ev._id}`, { quantity: 1 }).then(() => { mutateEvents(); mutateTickets(); setMessage("Ticket Booked!"); }))} onShare={handleShare} onViewDetails={(e) => navigate(`/events/${e._id}`)} getTicketStatusBadge={getTicketStatusBadge} />)}</div>}
           {view === "event_details" && (
             <Views.EventDetailsView
               eventId={eventIdFromPath}
