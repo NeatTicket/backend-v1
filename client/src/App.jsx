@@ -140,7 +140,6 @@ export default function App() {
       await run(() => axiosInstance.delete(`/places/${deleteId}`).then(() => {
         mutatePlaces();
         setSelectedPlace(null);
-        if (view === "places") changeView("overview");
       }));
     }
     else if (deleteType === "event") {
