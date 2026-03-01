@@ -1,35 +1,31 @@
-const { body, validationResult } = require("express-validator");
+const Joi = require('joi');
 
-/**
- * Validate login request
- */
-const validateLogin = [
-  body("email").isEmail().withMessage("Please enter a valid email"),
-  body("password").notEmpty().withMessage("Password is required"),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ status: "ERROR", errors: errors.array() });
-    }
-    next();
-  },
-];
+const register = {
+  body: Joi.object().keys({
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    email: Joi.string().email().required(),
+    password: Joi.string()
+      .min(8)
+      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*).'
+      }),
+    role: Joi.string().valid('user', 'place_owner', 'event_organizer', 'admin').default('user'),
+    confirmPassword: Joi.any()
+  }),
+};
 
-/**
- * Validate register request
- */
-const validateRegister = [
-  body("email").isEmail().withMessage("Please enter a valid email"),
-  body("password").notEmpty().withMessage("Password is required"),
-  body("firstName").notEmpty().withMessage("First name is required"),
-  body("lastName").notEmpty().withMessage("Last name is required"),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ status: "ERROR", errors: errors.array() });
-    }
-    next();
-  },
-];
 
-module.exports = { validateLogin, validateRegister };
+const login = {
+  body: Joi.object().keys({
+    email: Joi.string().email().required(),
+    password: Joi.string().required(),
+  }),
+};
+
+module.exports = {
+  register,
+  login,
+};

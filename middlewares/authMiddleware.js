@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const config = require("../config");
 const createError = require("http-errors");
 const User = require("../models/User");
 
@@ -23,8 +24,8 @@ const protect = (roles = []) => {
 
     try {
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+      const decoded = jwt.verify(token, config.jwt.secret);
+
       // Fetch user from database
       const user = await User.findById(decoded.id).select("-password");
       if (!user) {

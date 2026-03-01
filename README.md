@@ -1,84 +1,94 @@
-# Neat Ticket
+# NeatTicket
 
-## Introduction
-This project is part of an event and place management system. It includes an API for managing users, places, and events.
+Backend API for users, places, events, and ticket booking, plus a React GUI to test the API.
+
+## Stack
+- Node.js + Express + MongoDB (backend)
+- React + Vite (test GUI)
 
 ## Requirements
-- Node.js
+- Node.js 18+
 - MongoDB
 
-## Installation
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/username/backend-v1.git
-    cd backend-v1
-    ```
-
-2. Install dependencies:
-    ```bash
-    npm install
-    ```
-
-3. Set up environment variables:
-    - Create a `.env` file in the root directory of the project and add the following variables:
-        ```env
-        MONGO_URL=mongodb://localhost:27017/your-database-name
-        JWT_SECRET=your-secret-key
-        PORT=4000
-        ```
-
-## Running the Server
-
-
-
-
-To start the server, use the following command:
+## Setup
+1. Install backend dependencies:
 ```bash
-npm start
+npm install
+```
+2. Create `.env` in the project root:
+```env
+MONGO_URL=mongodb://localhost:27017/neatticket
+JWT_SECRET=your-secret-key
+PORT=4000
+```
+3. Start backend:
+```bash
+npm run dev
 ```
 
-## Routes
-### Authentication
-- **POST /api/auth/register**: Register a new user
-- **POST /api/auth/login**: Login a user
+## React GUI
+1. Open client folder:
+```bash
+cd client
+```
+2. Install client dependencies:
+```bash
+npm install
+```
+3. Start client:
+```bash
+npm run dev
+```
+4. Open `http://localhost:5173`.
+
+## Main Features
+- Auth with JWT (`register`, `login`)
+- Profile management
+- User admin controls (approve + role assignment)
+- Place creation and management with search + pagination
+- Event creation and management with search/filter/sort + pagination
+- Ticket booking and cancellation
+- Admin overview statistics endpoint
+- React test console for end-to-end manual testing
+
+## API Summary
+### Auth
+- `POST /api/auth/register`
+- `POST /api/auth/login`
 
 ### Users
-- **GET /api/users**: Get all users (admin only)
-- **GET /api/users/:userId**: Get a specific user by ID (admin or the user themselves)
-- **POST /api/users**: Create a new user (admin only)
-- **PATCH /api/users/:userId/role**: Update a user's role by ID (admin only)
-- **PATCH /api/users/:userId**: Update a user's details by ID (admin or the user themselves)
-- **DELETE /api/users/:userId**: Delete a user by ID (admin only)
-- **POST /api/users/:userId/upload**: Upload a profile image for a user (user themselves only)
-- **PATCH /api/users/:userId/approve**: Approve a user by ID (admin only)
-
-### Places
-- **GET /api/places**: Get all places
-- **GET /api/places/:placeId**: Get a specific place by ID
-- **POST /api/places**: Create a new place (approved users with the role "place_owner" only)
-- **PATCH /api/places/:placeId**: Update a place by ID (owner only)
-- **DELETE /api/places/:placeId**: Delete a place by ID (owner only)
-
-### Events
-- **GET /api/events**: Get all events
-- **GET /api/events/:eventId**: Get a specific event by ID
-- **POST /api/events**: Add a new event (approved users with the role "event_organizer" only)
-- **PATCH /api/events/:eventId**: Update an event by ID (organizer only)
-- **DELETE /api/events/:eventId**: Delete an event by ID (organizer only)
+- `GET /api/users` (admin)
+- `GET /api/users/:userId` (admin or owner)
+- `POST /api/users` (admin)
+- `PATCH /api/users/:userId/role` (admin)
+- `PATCH /api/users/:userId` (admin or owner)
+- `DELETE /api/users/:userId` (admin)
+- `POST /api/users/:userId/upload` (admin or owner)
+- `PATCH /api/users/:userId/approve` (admin)
 
 ### Profile
-- **GET /api/profile**: Get the authenticated user's profile
-- **PUT /api/profile**: Update the authenticated user's profile
+- `GET /api/profile`
+- `PUT /api/profile`
 
-## Contribution
-If you would like to contribute to this project, please open a pull request or create a new issue.
+### Places
+- `GET /api/places`
+- `GET /api/places/:placeId`
+- `POST /api/places` (approved `place_owner` or `admin`)
+- `PATCH /api/places/:placeId` (owner)
+- `DELETE /api/places/:placeId` (owner)
 
+### Events
+- `GET /api/events`
+- `GET /api/events/:eventId`
+- `POST /api/events` (`event_organizer` or `admin`)
+- `PATCH /api/events/:eventId` (organizer)
+- `DELETE /api/events/:eventId` (organizer)
 
-## FAQ
-### How do I register a new user?
-- Send a POST request to /api/auth/register with the user's details.
+### Tickets
+- `GET /api/tickets/me`
+- `POST /api/tickets/events/:eventId`
+- `DELETE /api/tickets/:ticketId`
 
-### How do I create a new place?
-- Send a POST request to /api/places with the place's details.
-- Make sure you are authenticated and have the role "place_owner".
+### Stats
+- `GET /api/stats/overview` (admin)
 

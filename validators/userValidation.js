@@ -1,18 +1,22 @@
-const { body, validationResult } = require("express-validator");
-const httpStatusText = require("../utils/httpStatusText");
+const Joi = require('joi');
 
-const validateUser = [
-  body("firstName").notEmpty().withMessage("First name is required"),
-  body("lastName").notEmpty().withMessage("Last name is required"),
-  body("email").isEmail().withMessage("Invalid email"),
-  body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ status: httpStatusText.FAIL, errors: errors.array() });
-    }
-    next();
-  },
-];
+const validateUser = {
+  body: Joi.object().keys({
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    email: Joi.string().email().required(),
+    password: Joi.string()
+      .min(8)
+      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.'
+      }),
+    role: Joi.string().valid('user', 'place_owner', 'event_organizer', 'admin').optional(),
+  }),
+};
 
-module.exports = { validateUser };
+
+module.exports = {
+  validateUser,
+};

@@ -1,0 +1,280 @@
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import useSWR from "swr";
+
+// ─── API & Libs ─────────────────────────────────
+import { loginUser, registerUser } from "./features/auth/api/authApi";
+import { useProfile } from "./features/auth/hooks/useProfile";
+import axiosInstance from "./lib/axios";
+import { initialRegister, initialLogin, initialPlace, initialEvent } from "./lib/constants";
+
+// ─── Components ─────────────────────────────────
+import { Toast, Modal } from "./components/common/UIElements";
+import { Sidebar } from "./components/layout/Sidebar";
+import { Header } from "./components/layout/Header";
+import { VenueCard, EventCard } from "./components/common/Cards";
+import { PlaceDetails } from "./components/common/PlaceDetails";
+import { AvailabilityCalendar } from "./components/venue/AvailabilityCalendar";
+import * as Views from "./components/Views";
+
+import "./styles.css";
+
+export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const savedTheme = localStorage.getItem("neatTicketTheme") || "dark";
+  const [theme, setTheme] = useState(savedTheme);
+
+  const getViewFromPath = (path) => {
+    const p = path.replace(/^\/+/, "");
+    if (p.startsWith("events/") && p.split("/")[1]) return "event_details";
+    return p || "overview";
+  };
+
+  const [view, setView] = useState(getViewFromPath(location.pathname));
+
+  useEffect(() => {
+    setView(getViewFromPath(location.pathname));
+  }, [location.pathname]);
+
+  const eventIdFromPath = useMemo(() => {
+    const parts = location.pathname.split("/");
+    return parts[1] === "events" ? parts[2] : null;
+  }, [location.pathname]);
+
+  const changeView = (v) => navigate(v === "overview" ? "/" : `/${v}`);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("neatTicketTheme", theme);
+  }, [theme]);
+
+  const [token, setToken] = useState(localStorage.getItem("neatTicketToken") || "");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [registerForm, setRegisterForm] = useState(initialRegister);
+  const [loginForm, setLoginForm] = useState(initialLogin);
+  const [placeForm, setPlaceForm] = useState(initialPlace);
+  const [eventForm, setEventForm] = useState(initialEvent);
+  const [search, setSearch] = useState("");
+  const [operators, setOperators] = useState([]);
+  const [profileForm, setProfileForm] = useState({ firstName: "", lastName: "", email: "", password: "", confirmPassword: "", profileImage: "" });
+  const [editingPlaceId, setEditingPlaceId] = useState(null);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteType, setDeleteType] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
+  const [availabilitySlots, setAvailabilitySlots] = useState([]);
+  const [availabilityPlaceName, setAvailabilityPlaceName] = useState("");
+  const [showAvailability, setShowAvailability] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [rejectModal, setRejectModal] = useState({ isOpen: false, id: null, type: "place" });
+  const [rejectReason, setRejectReason] = useState("");
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const getImgUrl = (url) => {
+    if (!url) return "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800";
+    if (url.startsWith("http")) return url;
+    const base = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace("/api", "");
+    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
+  const getTicketStatusBadge = (status) => {
+    if (status === "used") return <span className="status-badge" style={{ background: 'var(--panel-hover)', color: 'var(--muted)' }}>USED</span>;
+    if (status === "expired") return <span className="status-badge rejected">EXPIRED</span>;
+    return <span className="status-badge approved">ACTIVE</span>;
+  };
+
+  const authHeadersExist = useMemo(() => Boolean(token), [token]);
+  const { profile, mutate: mutateProfile } = useProfile();
+
+  const fetcher = (url) => axiosInstance.get(url).then(res => res.data.data);
+  const { data: statsData, mutate: mutateStats } = useSWR(authHeadersExist && profile?.role === "admin" ? '/stats/overview' : null, fetcher, { refreshInterval: 10000 });
+  const { data: publicStats } = useSWR('/stats/public', fetcher, { refreshInterval: 60000 });
+  const { data: placesData, mutate: mutatePlaces } = useSWR('/places' + (search ? `?search=${search}` : ''), fetcher, { refreshInterval: 10000 });
+  const places = placesData?.places || [];
+  const { data: eventsData, mutate: mutateEvents } = useSWR(`/events?upcoming=true${search ? `&search=${encodeURIComponent(search)}` : ''}`, fetcher, { refreshInterval: 10000 });
+  const events = eventsData?.events || [];
+  const { data: ticketsData, mutate: mutateTickets } = useSWR(authHeadersExist ? '/tickets/me' : null, fetcher, { refreshInterval: 15000 });
+  const { data: notifData, mutate: mutateNotifs } = useSWR(authHeadersExist ? '/notifications' : null, fetcher, { refreshInterval: 12000 });
+  const unreadCount = notifData?.unreadCount || 0;
+
+  async function run(action) {
+    setLoading(true); setError(""); setMessage(""); setFormErrors({});
+    try { await action(); } catch (err) { setError(err.response?.data?.message || err.message || "Action failed"); }
+    finally { setLoading(false); }
+  }
+
+  const handleLogin = () => run(async () => {
+    const res = await loginUser(loginForm);
+    setToken(res.token || ""); mutateProfile(); changeView(res.user?.role === "admin" ? "overview" : "places");
+  });
+
+  const handleRegister = () => run(async () => {
+    if (registerForm.password !== registerForm.confirmPassword) throw new Error("Passwords do not match");
+    await registerUser(registerForm); changeView("login");
+  });
+
+  const clearSession = () => {
+    setToken(""); localStorage.removeItem("neatTicketToken");
+    mutateProfile(null, false); changeView("login");
+  };
+
+  const handleSavePlace = () => run(async () => {
+    const data = new FormData();
+    Object.keys(placeForm).forEach(k => { if (k === 'imageFiles') placeForm[k].forEach(f => data.append("images", f)); else data.append(k, placeForm[k]); });
+    if (editingPlaceId) await axiosInstance.patch(`/places/${editingPlaceId}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+    else await axiosInstance.post("/places", data, { headers: { "Content-Type": "multipart/form-data" } });
+    setPlaceForm(initialPlace); setEditingPlaceId(null); mutatePlaces(); setMessage("Venue Saved!");
+  });
+
+  const handleConfirmDelete = async () => {
+    if (deleteType === "account") {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'}/users/${profile._id}`, { headers: { Authorization: `Bearer ${token}` } }).then(clearSession);
+    }
+    else if (deleteType === "place") {
+      await run(() => axiosInstance.delete(`/places/${deleteId}`).then(() => {
+        mutatePlaces();
+        setSelectedPlace(null);
+        if (view === "places") changeView("overview");
+      }));
+    }
+    else if (deleteType === "event") {
+      await run(() => axiosInstance.delete(`/events/${deleteId}`).then(() => {
+        mutateEvents();
+        if (view === "event_details") changeView("events");
+      }));
+    }
+    else if (deleteType === "ticket") { await run(() => axiosInstance.delete(`/tickets/${deleteId}`).then(mutateTickets)); }
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleSaveEvent = () => run(async () => {
+    if (!eventForm.isCustomLocation && !eventForm.place) throw new Error("Venue required");
+    const data = new FormData();
+    Object.keys(eventForm).forEach(k => {
+      if (k === 'imageFiles') {
+        eventForm[k].forEach(f => data.append("images", f));
+      } else if (k === 'date') {
+        data.append(k, new Date(eventForm[k]).toISOString());
+      } else {
+        data.append(k, eventForm[k]);
+      }
+    });
+
+    if (editingEventId) await axiosInstance.patch(`/events/${editingEventId}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+    else await axiosInstance.post("/events", data, { headers: { "Content-Type": "multipart/form-data" } });
+
+    setEventForm(initialEvent); setEditingEventId(null); mutateEvents(); mutateStats(); setMessage("Event Saved!");
+  });
+
+  const handleShare = (ev) => {
+    const url = `${window.location.origin}/events/${ev._id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setMessage("Link copied to clipboard!");
+    }).catch(err => {
+      setError("Failed to copy link");
+    });
+  };
+
+  const loadAvailability = async (placeId, placeName) => {
+    run(async () => {
+      const res = await axiosInstance.get(`/places/${placeId}/availability`);
+      setAvailabilitySlots(res.data?.data?.bookedSlots || []); setAvailabilityPlaceName(placeName); setShowAvailability(true);
+    });
+  };
+
+  const startEditEvent = (evt) => {
+    setEditingEventId(evt._id);
+    setEventForm({ ...evt, date: new Date(evt.date).toISOString().slice(0, 16), place: evt.place?._id });
+  };
+
+  useEffect(() => {
+    if (profile) setProfileForm({ ...profile, password: "", confirmPassword: "" });
+  }, [profile]);
+
+  useEffect(() => {
+    if (view === "users" && authHeadersExist && profile?.role === "admin") axiosInstance.get("/users/operators").then(res => setOperators(res.data?.data?.operators || []));
+  }, [view, authHeadersExist, profile]);
+
+  return (
+    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+      <Sidebar view={view} changeView={changeView} profile={profile} authHeadersExist={authHeadersExist} clearSession={clearSession} />
+
+      <main className="main-content" style={{ flex: 1, padding: '20px 40px', overflowY: 'auto' }}>
+        <Header
+          view={view} profile={profile} showNotifications={showNotifications} setShowNotifications={setShowNotifications}
+          unreadCount={unreadCount} notifications={notifData?.notifications || []} mutateNotifs={mutateNotifs}
+          changeView={changeView} showProfileMenu={showProfileMenu} setShowProfileMenu={setShowProfileMenu}
+          getImgUrl={getImgUrl} axiosInstance={axiosInstance} clearSession={clearSession}
+          theme={theme} setTheme={setTheme}
+        />
+
+        <div className="content-body" style={{ marginTop: 30 }}>
+          {loading && <div className="loading-overlay">Loading...</div>}
+
+          {view === "overview" && <Views.Overview profile={profile} stats={statsData} publicStats={publicStats} authHeadersExist={authHeadersExist} changeView={changeView} places={places} getImgUrl={getImgUrl} setSelectedPlace={setSelectedPlace} />}
+          {view === "places" && <div className="grid animate-fade-in">{places.map(p => <VenueCard key={p._id} p={p} profile={profile} getImgUrl={getImgUrl} onSelect={() => setSelectedPlace(p)} onEdit={() => { setEditingPlaceId(p._id); setPlaceForm(p); changeView("my_venues"); }} onDelete={() => { setDeleteId(p._id); setDeleteType("place"); setIsDeleteModalOpen(true); }} />)}</div>}
+          {view === "events" && <div className="grid animate-fade-in">{events.filter(ev => ev.status === "approved").map(ev => <EventCard key={ev._id} ev={ev} profile={profile} onBook={() => run(() => axiosInstance.post(`/tickets/events/${ev._id}`, { quantity: 1 }).then(() => { mutateEvents(); mutateTickets(); setMessage("Ticket Booked!"); }))} onShare={handleShare} onViewDetails={(e) => navigate(`/events/${e._id}`)} getTicketStatusBadge={getTicketStatusBadge} />)}</div>}
+          {view === "event_details" && (
+            <Views.EventDetailsView
+              eventId={eventIdFromPath}
+              profile={profile}
+              getImgUrl={getImgUrl}
+              onBook={(id) => run(() => axiosInstance.post(`/tickets/events/${id}`, { quantity: 1 }).then(() => { mutateEvents(); mutateTickets(); setMessage("Ticket Booked!"); }))}
+              onShare={handleShare}
+              onEdit={(ev) => { setEditingEventId(ev._id); setEventForm({ ...ev, date: ev.date ? new Date(ev.date).toISOString().slice(0, 16) : "" }); changeView("my_events"); }}
+              onDelete={(id) => { setDeleteId(id); setDeleteType("event"); setIsDeleteModalOpen(true); }}
+              changeView={changeView}
+            />
+          )}
+          {view === "my_venues" && <Views.MyVenuesView profile={profile} places={places} editingPlaceId={editingPlaceId} setEditingPlaceId={setEditingPlaceId} placeForm={placeForm} setPlaceForm={setPlaceForm} onSave={handleSavePlace} onStartEdit={(p) => { setEditingPlaceId(p._id); setPlaceForm(p); }} onDelete={(id) => { setDeleteId(id); setDeleteType("place"); setIsDeleteModalOpen(true); }} onSelect={setSelectedPlace} setRejectModal={setRejectModal} setRejectReason={setRejectReason} updatePlaceStatus={(id, s, r) => axiosInstance.patch(`/places/${id}/approve`, { status: s, reason: r }).then(mutatePlaces)} run={run} initialPlace={initialPlace} getImgUrl={getImgUrl} />}
+          {view === "my_events" && <Views.MyEventsView profile={profile} events={events} places={places} editingEventId={editingEventId} setEditingEventId={setEditingEventId} eventForm={eventForm} setEventForm={setEventForm} onSave={handleSaveEvent} onStartEdit={startEditEvent} onDelete={(id) => { setDeleteId(id); setDeleteType("event"); setIsDeleteModalOpen(true); }} onApprove={(id, s, r) => axiosInstance.patch(`/events/${id}/approve`, { status: s, reason: r }).then(mutateEvents)} onShare={handleShare} onViewDetails={(e) => navigate(`/events/${e._id}`)} setRejectModal={setRejectModal} setRejectReason={setRejectReason} run={run} initialEvent={initialEvent} loadAvailability={loadAvailability} getImgUrl={getImgUrl} />}
+          {view === "tickets" && <Views.TicketsView tickets={ticketsData?.tickets || []} getTicketStatusBadge={getTicketStatusBadge} getImgUrl={getImgUrl} useTicketAction={(id) => run(async () => { await axiosInstance.patch(`/tickets/${id}/use`); mutateTickets(); setMessage("Checked-In!"); })} onDelete={(id) => { setDeleteId(id); setDeleteType("ticket"); setIsDeleteModalOpen(true); }} />}
+          {view === "users" && <Views.UserManagementView operators={operators} onToggleApprove={(id, s) => run(async () => { await axiosInstance.patch(`/users/${id}/approve`, { isApproved: !s }); axiosInstance.get("/users/operators").then(res => setOperators(res.data?.data?.operators || [])); })} />}
+          {view === "profile" && <Views.ProfileView profileForm={profileForm} setProfileForm={setProfileForm} onSave={() => run(async () => {
+            if (profileForm.password && profileForm.password !== profileForm.confirmPassword) {
+              setFormErrors({ passwordMatch: "Passwords do not match" });
+              return;
+            }
+            setFormErrors({});
+            const data = new FormData();
+            Object.keys(profileForm).forEach(k => {
+              if (k === 'newProfileImage') {
+                if (profileForm[k]) data.append("profileImage", profileForm[k]);
+              } else if (k !== 'confirmPassword') {
+                data.append(k, profileForm[k]);
+              }
+            });
+            await axiosInstance.patch("/profile", data, { headers: { "Content-Type": "multipart/form-data" } });
+            mutateProfile();
+            setMessage("Profile & Security Updated!");
+          })} onLogout={clearSession} onDeleteAccount={() => { setDeleteType("account"); setIsDeleteModalOpen(true); }} formErrors={formErrors} getImgUrl={getImgUrl} />}
+          {view === "login" && <Views.LoginView loginForm={loginForm} setLoginForm={setLoginForm} onLogin={handleLogin} changeView={changeView} />}
+          {view === "register" && <Views.RegisterView registerForm={registerForm} setRegisterForm={setRegisterForm} onRegister={handleRegister} changeView={changeView} formErrors={formErrors} />}
+        </div>
+
+        <PlaceDetails place={selectedPlace} getImgUrl={getImgUrl} onClose={() => setSelectedPlace(null)} />
+        {showAvailability && <AvailabilityCalendar slots={availabilitySlots} placeName={availabilityPlaceName} onClose={() => setShowAvailability(false)} />}
+        <Toast message={message} type="success" onClose={() => setMessage("")} />
+        <Toast message={error} type="error" onClose={() => setError("")} />
+        <Modal isOpen={isDeleteModalOpen} title="Confirm Deletion" onConfirm={handleConfirmDelete} onCancel={() => setIsDeleteModalOpen(false)}>Are you sure you want to permanently delete this?</Modal>
+
+        {rejectModal.isOpen && (
+          <Modal isOpen={true} title={`Reject ${rejectModal.type}`} onConfirm={() => run(async () => {
+            const url = rejectModal.type === "place" ? `/places/${rejectModal.id}/approve` : `/events/${rejectModal.id}/approve`;
+            await axiosInstance.patch(url, { status: "rejected", reason: rejectReason });
+            rejectModal.type === "place" ? mutatePlaces() : mutateEvents();
+            setRejectModal({ isOpen: false, id: null });
+          })} onCancel={() => setRejectModal({ isOpen: false, id: null })} confirmText="Send Rejection">
+            <textarea placeholder="Reason for rejection..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} style={{ width: '100%', marginTop: 10 }} rows={3} />
+          </Modal>
+        )}
+      </main>
+    </div>
+  );
+}

@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const config = require("../config");
 const createError = require("http-errors");
 const User = require("../models/User");
 
@@ -17,7 +18,7 @@ const protect = async (req, res, next) => {
   const token = authHeader.replace("Bearer ", "").trim();
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, config.jwt.secret);
 
     // Fetch user from database
     const user = await User.findById(decoded.userId).select("-password");
@@ -38,4 +39,29 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+/**
+ * Middleware to optionally protect routes by verifying JWT token.
+ * If no token is provided, it simply moves on.
+ */
+const optionalProtect = async (req, res, next) => {
+  const authHeader = req.header("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next();
+  }
+
+  const token = authHeader.replace("Bearer ", "").trim();
+
+  try {
+    const decoded = jwt.verify(token, config.jwt.secret);
+    const user = await User.findById(decoded.userId).select("-password");
+    if (user) {
+      req.user = user;
+    }
+    next();
+  } catch (err) {
+    // If token is invalid or expired, just proceed as an unauthenticated user
+    next();
+  }
+};
+
+module.exports = { protect, optionalProtect };
