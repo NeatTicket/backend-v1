@@ -27,7 +27,7 @@ router.get("/", optionalProtect, getAllPlaces);
  * @desc    Get a place by ID
  * @access  Public
  */
-router.get("/:placeId", getPlaceById);
+router.get("/:placeId", optionalProtect, getPlaceById);
 
 /**
  * @route   PATCH /places/:placeId

@@ -171,6 +171,13 @@ const getPlaceById = asyncWrapper(async (req, res, next) => {
     return next(new AppError("Place not found", 404, httpStatusText.FAIL));
   }
 
+  const isAdmin = req.user?.role === "admin";
+  const isOwner = req.user?._id && place.owner?._id && place.owner._id.toString() === req.user._id.toString();
+  const canView = place.status === "approved" || isAdmin || isOwner;
+  if (!canView) {
+    return next(new AppError("Place not found", 404, httpStatusText.FAIL));
+  }
+
   res.json({ status: httpStatusText.SUCCESS, data: { place } });
 });
 

@@ -88,32 +88,31 @@ export function EventDetailsView({ eventId, profile, getImgUrl, onBook, onShare,
     return (
         <div className="animate-fade-in" style={{ maxWidth: 1000, margin: '0 auto', paddingBottom: 60 }}>
             {/* Action Bar */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <button className="btn btn-sm btn-ghost" onClick={() => changeView("events")}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
+                <button className="btn btn-sm btn-ghost" style={{ height: 40, borderRadius: 12, border: '1px solid var(--border)' }} onClick={() => changeView("events")}>
                     <Icon.ArrowRight style={{ transform: 'rotate(180deg)', width: 14, height: 14, marginRight: 8 }} /> Back to Events
                 </button>
-
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                     <button
                         className="btn btn-primary"
                         style={{
-                            height: 48,
-                            padding: '0 28px',
-                            borderRadius: '24px',
+                            height: 40,
+                            padding: '0 20px',
+                            borderRadius: '12px',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 10,
-                            fontSize: '0.95rem',
-                            fontWeight: 800,
+                            fontSize: '0.9rem',
+                            fontWeight: 700,
                             background: 'linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%)',
                             border: 'none',
-                            boxShadow: '0 10px 20px rgba(124, 58, 237, 0.3)',
+                            boxShadow: '0 6px 14px rgba(124, 58, 237, 0.25)',
                             color: '#fff',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}
                         onClick={() => onShare(event)}
                     >
-                        <Icon.Share style={{ width: 18, height: 18, strokeWidth: 2.5 }} /> Share Event
+                        <Icon.Share style={{ width: 14, height: 14, strokeWidth: 2.3 }} /> Share Event
                     </button>
                     {canManage && (
                         <>

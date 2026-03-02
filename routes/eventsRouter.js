@@ -17,7 +17,7 @@ router.get("/", optionalProtect, getAllEvents);
  * @desc    Get an event by ID
  * @access  Public
  */
-router.get("/:eventId", getEvent);
+router.get("/:eventId", optionalProtect, getEvent);
 
 /**
  * @route   POST /events

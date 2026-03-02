@@ -119,10 +119,18 @@ const getEvent = asyncWrapper(async (req, res, next) => {
   }
 
   const event = await Event.findById(eventId)
-    .populate("place", "name location")
+    .populate("place", "name location owner")
     .populate("organizer", "firstName lastName profileImage");
 
   if (!event) {
+    return next(new AppError("Event not found", 404, httpStatusText.FAIL));
+  }
+
+  const isAdmin = req.user?.role === "admin";
+  const isOrganizer = req.user?._id && (event.organizer?._id || "").toString() === req.user._id.toString();
+  const isPlaceOwner = req.user?._id && event.place?.owner && event.place.owner.toString() === req.user._id.toString();
+  const canView = event.status === "approved" || isAdmin || isOrganizer || isPlaceOwner;
+  if (!canView) {
     return next(new AppError("Event not found", 404, httpStatusText.FAIL));
   }
 
