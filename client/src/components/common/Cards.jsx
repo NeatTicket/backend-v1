@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icon } from './Icons';
 
-export function VenueCard({ p, profile, getImgUrl, onEdit, onDelete, onSelect }) {
+export function VenueCard({ p, profile, getImgUrl, onEdit, onDelete, onSelect, onShare }) {
     const isAdmin = profile?.role === "admin";
     const isOwner = p.owner?._id === profile?._id;
     const canManage = profile && (isAdmin || isOwner);
@@ -39,13 +39,17 @@ export function VenueCard({ p, profile, getImgUrl, onEdit, onDelete, onSelect })
                         fontSize: '1.2rem',
                         lineHeight: 1.3
                     }} title={p.name}>{p.name}</h3>
-                    {canManage && (
-                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                            {onEdit && <button className="theme-toggle" onClick={onEdit}><Icon.Edit style={{ width: 14, height: 14 }} /></button>}
-                            {onDelete && <button className="theme-toggle" style={{ color: 'var(--bad)' }} onClick={onDelete}><Icon.Trash style={{ width: 14, height: 14 }} /></button>}
-                        </div>
-                    )}
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        {onShare && <button className="theme-toggle" style={{ width: 32, height: 32, background: 'var(--accent)', color: '#fff', border: 'none' }} onClick={(e) => { e.stopPropagation(); onShare(p, 'venue'); }} title="Share Venue"><Icon.Share style={{ width: 14, height: 14 }} /></button>}
+                        {canManage && (
+                            <>
+                                {onEdit && <button className="theme-toggle" style={{ width: 32, height: 32 }} onClick={onEdit}><Icon.Edit style={{ width: 14, height: 14 }} /></button>}
+                                {onDelete && <button className="theme-toggle" style={{ width: 32, height: 32, color: 'var(--bad)' }} onClick={onDelete}><Icon.Trash style={{ width: 14, height: 14 }} /></button>}
+                            </>
+                        )}
+                    </div>
                 </div>
+
                 {canManage && p.status === "rejected" && p.rejectionReason && (
                     <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', color: 'var(--bad)', fontSize: '0.8rem', borderRadius: 8, marginTop: 12 }}>
                         {p.rejectionReason}

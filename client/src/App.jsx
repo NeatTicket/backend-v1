@@ -29,6 +29,7 @@ export default function App() {
   const getViewFromPath = (path) => {
     const p = path.replace(/^\/+/, "");
     if (p.startsWith("events/") && p.split("/")[1]) return "event_details";
+    if (p.startsWith("providers/") && p.split("/")[1]) return "provider_details";
     return p || "overview";
   };
 
@@ -41,6 +42,11 @@ export default function App() {
   const eventIdFromPath = useMemo(() => {
     const parts = location.pathname.split("/");
     return parts[1] === "events" ? parts[2] : null;
+  }, [location.pathname]);
+
+  const providerIdFromPath = useMemo(() => {
+    const parts = location.pathname.split("/");
+    return parts[1] === "providers" ? parts[2] : null;
   }, [location.pathname]);
 
   const changeView = (v) => navigate(v === "overview" ? "/" : `/${v}`);
@@ -173,13 +179,24 @@ export default function App() {
     setEventForm(initialEvent); setEditingEventId(null); mutateEvents(); mutateStats(); setMessage("Event Saved!");
   });
 
-  const handleShare = (ev) => {
-    const url = `${window.location.origin}/events/${ev._id}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setMessage("Link copied to clipboard!");
-    }).catch(err => {
-      setError("Failed to copy link");
-    });
+  const handleShare = (item, type = 'event') => {
+    const isVenue = type === 'venue' || item.location !== undefined;
+    let url = "";
+    if (isVenue) {
+      url = `${window.location.origin}/places`;
+      navigator.clipboard.writeText(`Check out ${item.name} at ${item.location}!\n${url}`).then(() => {
+        setMessage("Venue info copied!");
+      }).catch(err => {
+        setError("Failed to copy link");
+      });
+    } else {
+      url = `${window.location.origin}/events/${item._id}`;
+      navigator.clipboard.writeText(url).then(() => {
+        setMessage("Link copied to clipboard!");
+      }).catch(err => {
+        setError("Failed to copy link");
+      });
+    }
   };
 
   const loadAvailability = async (placeId, placeName) => {
@@ -219,7 +236,7 @@ export default function App() {
         <div className="content-body" style={{ marginTop: 30 }}>
           {loading && <div className="loading-overlay">Loading...</div>}
 
-          {view === "overview" && <Views.Overview profile={profile} stats={statsData} publicStats={publicStats} authHeadersExist={authHeadersExist} changeView={changeView} places={places} getImgUrl={getImgUrl} setSelectedPlace={setSelectedPlace} />}
+          {view === "overview" && <Views.Overview profile={profile} stats={statsData} publicStats={publicStats} authHeadersExist={authHeadersExist} changeView={changeView} places={places} getImgUrl={getImgUrl} setSelectedPlace={setSelectedPlace} onShare={handleShare} />}
           {view === "places" && (
             <div className="grid animate-fade-in">
               {places
@@ -237,6 +254,7 @@ export default function App() {
                       profile={profile}
                       getImgUrl={getImgUrl}
                       onSelect={() => setSelectedPlace(p)}
+                      onShare={handleShare}
                       onEdit={isOwner ? () => { setEditingPlaceId(p._id); setPlaceForm(p); changeView("my_venues"); } : undefined}
                       onDelete={profile?.role === "admin" || isOwner ? () => { setDeleteId(p._id); setDeleteType("place"); setIsDeleteModalOpen(true); } : undefined}
                     />
@@ -284,8 +302,20 @@ export default function App() {
               changeView={changeView}
             />
           )}
-          {view === "my_venues" && <Views.MyVenuesView profile={profile} places={places} editingPlaceId={editingPlaceId} setEditingPlaceId={setEditingPlaceId} placeForm={placeForm} setPlaceForm={setPlaceForm} onSave={handleSavePlace} onStartEdit={(p) => { setEditingPlaceId(p._id); setPlaceForm(p); }} onDelete={(id) => { setDeleteId(id); setDeleteType("place"); setIsDeleteModalOpen(true); }} onSelect={setSelectedPlace} setRejectModal={setRejectModal} setRejectReason={setRejectReason} updatePlaceStatus={(id, s, r) => axiosInstance.patch(`/places/${id}/approve`, { status: s, reason: r }).then(mutatePlaces)} run={run} initialPlace={initialPlace} getImgUrl={getImgUrl} search={search} searchCategory={searchCategory} forcePersonalOnly={true} />}
-          {view === "admin_venues" && profile?.role === "admin" && <Views.MyVenuesView profile={profile} places={places} editingPlaceId={editingPlaceId} setEditingPlaceId={setEditingPlaceId} placeForm={placeForm} setPlaceForm={setPlaceForm} onSave={handleSavePlace} onStartEdit={(p) => { setEditingPlaceId(p._id); setPlaceForm(p); }} onDelete={(id) => { setDeleteId(id); setDeleteType("place"); setIsDeleteModalOpen(true); }} onSelect={setSelectedPlace} setRejectModal={setRejectModal} setRejectReason={setRejectReason} updatePlaceStatus={(id, s, r) => axiosInstance.patch(`/places/${id}/approve`, { status: s, reason: r }).then(mutatePlaces)} run={run} initialPlace={initialPlace} getImgUrl={getImgUrl} search={search} searchCategory={searchCategory} forceGlobalOnly={true} />}
+          {view === "provider_details" && (
+            <Views.ProviderDetailsView
+              providerId={providerIdFromPath}
+              profile={profile}
+              getImgUrl={getImgUrl}
+              places={places}
+              events={events}
+              changeView={changeView}
+              onShare={handleShare}
+              setSelectedPlace={setSelectedPlace}
+            />
+          )}
+          {view === "my_venues" && <Views.MyVenuesView profile={profile} places={places} editingPlaceId={editingPlaceId} setEditingPlaceId={setEditingPlaceId} placeForm={placeForm} setPlaceForm={setPlaceForm} onSave={handleSavePlace} onStartEdit={(p) => { setEditingPlaceId(p._id); setPlaceForm(p); }} onDelete={(id) => { setDeleteId(id); setDeleteType("place"); setIsDeleteModalOpen(true); }} onSelect={setSelectedPlace} setRejectModal={setRejectModal} setRejectReason={setRejectReason} updatePlaceStatus={(id, s, r) => axiosInstance.patch(`/places/${id}/approve`, { status: s, reason: r }).then(mutatePlaces)} run={run} initialPlace={initialPlace} getImgUrl={getImgUrl} search={search} searchCategory={searchCategory} forcePersonalOnly={true} onShare={handleShare} />}
+          {view === "admin_venues" && profile?.role === "admin" && <Views.MyVenuesView profile={profile} places={places} editingPlaceId={editingPlaceId} setEditingPlaceId={setEditingPlaceId} placeForm={placeForm} setPlaceForm={setPlaceForm} onSave={handleSavePlace} onStartEdit={(p) => { setEditingPlaceId(p._id); setPlaceForm(p); }} onDelete={(id) => { setDeleteId(id); setDeleteType("place"); setIsDeleteModalOpen(true); }} onSelect={setSelectedPlace} setRejectModal={setRejectModal} setRejectReason={setRejectReason} updatePlaceStatus={(id, s, r) => axiosInstance.patch(`/places/${id}/approve`, { status: s, reason: r }).then(mutatePlaces)} run={run} initialPlace={initialPlace} getImgUrl={getImgUrl} search={search} searchCategory={searchCategory} forceGlobalOnly={true} onShare={handleShare} />}
           {view === "my_events" && <Views.MyEventsView profile={profile} events={events} places={places} editingEventId={editingEventId} setEditingEventId={setEditingEventId} eventForm={eventForm} setEventForm={setEventForm} onSave={handleSaveEvent} onStartEdit={startEditEvent} onDelete={(id) => { setDeleteId(id); setDeleteType("event"); setIsDeleteModalOpen(true); }} onApprove={(id, s, r) => axiosInstance.patch(`/events/${id}/approve`, { status: s, reason: r }).then(mutateEvents)} onShare={handleShare} onViewDetails={(e) => navigate(`/events/${e._id}`)} setRejectModal={setRejectModal} setRejectReason={setRejectReason} run={run} initialEvent={initialEvent} loadAvailability={loadAvailability} getImgUrl={getImgUrl} search={search} searchCategory={searchCategory} forcePersonalOnly={true} />}
           {view === "admin_events" && profile?.role === "admin" && <Views.MyEventsView profile={profile} events={events} places={places} editingEventId={editingEventId} setEditingEventId={setEditingEventId} eventForm={eventForm} setEventForm={setEventForm} onSave={handleSaveEvent} onStartEdit={startEditEvent} onDelete={(id) => { setDeleteId(id); setDeleteType("event"); setIsDeleteModalOpen(true); }} onApprove={(id, s, r) => axiosInstance.patch(`/events/${id}/approve`, { status: s, reason: r }).then(mutateEvents)} onShare={handleShare} onViewDetails={(e) => navigate(`/events/${e._id}`)} setRejectModal={setRejectModal} setRejectReason={setRejectReason} run={run} initialEvent={initialEvent} loadAvailability={loadAvailability} getImgUrl={getImgUrl} search={search} searchCategory={searchCategory} forceGlobalOnly={true} />}
           {view === "tickets" && <Views.TicketsView tickets={ticketsData?.tickets || []} getTicketStatusBadge={getTicketStatusBadge} getImgUrl={getImgUrl} useTicketAction={(id) => run(async () => { await axiosInstance.patch(`/tickets/${id}/use`); mutateTickets(); setMessage("Checked-In!"); })} onDelete={(id) => { setDeleteId(id); setDeleteType("ticket"); setIsDeleteModalOpen(true); }} />}
