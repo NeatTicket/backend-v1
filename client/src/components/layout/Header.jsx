@@ -5,11 +5,16 @@ export function Header({
     view, profile, showNotifications, setShowNotifications, unreadCount,
     notifications, mutateNotifs, changeView, showProfileMenu, setShowProfileMenu,
     getImgUrl, axiosInstance, clearSession,
-    theme, setTheme, search, setSearch, searchCategory, setSearchCategory
+    theme, setTheme, search, setSearch, searchCategory, setSearchCategory,
+    isSidebarOpen, toggleSidebar
 }) {
     return (
         <header className="content-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: '180px' }}>
+                <button className="theme-toggle mobile-sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle sidebar menu">
+                    {isSidebarOpen ? <Icon.X /> : <Icon.Menu />}
+                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
                     {view === "event_details" ? "Event Details" : view === "place_details" ? "Venue Details" : view.charAt(0).toUpperCase() + view.slice(1).replace("Mgmt", "Management").replace("_", " ")}
                 </h2>
@@ -21,6 +26,7 @@ export function Header({
                         </span>
                     </div>
                 )}
+                </div>
             </div>
 
             <div style={{ flex: 1, maxWidth: 650, margin: '0 20px', display: 'flex', alignItems: 'center', gap: 10 }}>

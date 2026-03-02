@@ -24,6 +24,10 @@ export default function App() {
   const location = useLocation();
   const savedTheme = localStorage.getItem("neatTicketTheme") || "dark";
   const [theme, setTheme] = useState(savedTheme);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.innerWidth > 1024;
+  });
 
   const getViewFromPath = (path) => {
     const p = path.replace(/^\/+/, "");
@@ -54,12 +58,25 @@ export default function App() {
     return parts[1] === "places" ? parts[2] : null;
   }, [location.pathname]);
 
-  const changeView = (v) => navigate(v === "overview" ? "/" : `/${v}`);
+  const changeView = (v) => {
+    navigate(v === "overview" ? "/" : `/${v}`);
+    if (typeof window !== "undefined" && window.innerWidth <= 1024) {
+      setIsSidebarOpen(false);
+    }
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("neatTicketTheme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > 1024) setIsSidebarOpen(true);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const [token, setToken] = useState(localStorage.getItem("neatTicketToken") || "");
   const [message, setMessage] = useState("");
@@ -252,8 +269,9 @@ export default function App() {
   }, [view, authHeadersExist, profile]);
 
   return (
-    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
-      <Sidebar view={view} changeView={changeView} profile={profile} authHeadersExist={authHeadersExist} clearSession={clearSession} />
+    <div className={`app-shell ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`} style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+      <Sidebar view={view} changeView={changeView} profile={profile} authHeadersExist={authHeadersExist} clearSession={clearSession} isSidebarOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(v => !v)} />
+      {isSidebarOpen && <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} />}
 
       <main className="main-content" style={{ flex: 1, padding: '20px 40px', overflowY: 'auto' }}>
         <Header
@@ -263,6 +281,8 @@ export default function App() {
           getImgUrl={getImgUrl} axiosInstance={axiosInstance} clearSession={clearSession}
           theme={theme} setTheme={setTheme} search={search} setSearch={setSearch}
           searchCategory={searchCategory} setSearchCategory={setSearchCategory}
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(v => !v)}
         />
 
         <div className="content-body" style={{ marginTop: 30 }}>

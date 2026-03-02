@@ -8,6 +8,7 @@ A premium event management and venue booking platform designed for seamless inte
 - Dedicated venue details route: opening venue details now uses a standalone page at `/places/:id`.
 - Event card UX: clicking the event image now opens the event details page directly.
 - Venue-to-event flow: from venue details, users can start creating an event at that venue. Only `event_organizer` and `admin` are allowed; others receive a clear authorization error.
+- Deployment docs updated on March 2, 2026, with explicit GitHub + Vercel flow.
 
 ## Core Features
 
@@ -121,3 +122,22 @@ The project is structured to be easily deployed to Vercel. Both the frontend and
 3. Click Deploy.
 
 Your NeatTicket platform is now live!
+
+### Optional: Deploy with Vercel CLI
+
+You can also deploy from terminal after pushing to GitHub:
+
+```bash
+# Backend (from repo root)
+vercel
+vercel --prod
+
+# Frontend (from client directory)
+cd client
+vercel
+vercel --prod
+```
+
+When prompted:
+- For backend, keep Root Directory as `.` and set `MONGO_URL` and `JWT_SECRET`.
+- For frontend, use Root Directory `client` and set `VITE_API_URL` to your backend URL + `/api/v1`.

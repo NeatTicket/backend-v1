@@ -286,28 +286,27 @@ export function PlaceDetailsView({ placeId, profile, getImgUrl, onShare, onCreat
     const canManage = profile && (isAdmin || isOwner);
 
     return (
-        <div className="animate-fade-in" style={{ maxWidth: 1000, margin: '0 auto', paddingBottom: 60 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div className="animate-fade-in place-details-page">
+            <div className="place-details-toolbar">
                 <button className="btn btn-sm btn-ghost" onClick={() => changeView("places")}>
                     <Icon.ArrowRight style={{ transform: 'rotate(180deg)', width: 14, height: 14, marginRight: 8 }} /> Back to Venues
                 </button>
-                <div style={{ display: 'flex', gap: 12 }}>
-                    <button className="btn btn-primary" style={{ height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => onShare(place, "venue")}>
-                        <Icon.Share style={{ width: 14, height: 14 }} /> Share Venue
-                    </button>
-                    <button
-                        className="btn btn-sm btn-ghost"
-                        style={{ height: 40, borderRadius: 12, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}
-                        onClick={() => onCreateEventAtVenue?.(place)}
-                    >
-                        <Icon.Event style={{ width: 14, height: 14 }} /> Create Event Here
-                    </button>
+
+                <div className="place-details-actions">
+                    <div className="place-primary-actions">
+                        <button className="btn btn-primary place-action-btn" onClick={() => onShare(place, "venue")}>
+                            <Icon.Share style={{ width: 14, height: 14 }} /> Share Venue
+                        </button>
+                        <button className="btn btn-ghost place-action-btn" onClick={() => onCreateEventAtVenue?.(place)}>
+                            <Icon.Event style={{ width: 14, height: 14 }} /> Create Event Here
+                        </button>
+                    </div>
                     {canManage && (
                         <>
-                            <button className="btn btn-sm btn-ghost" style={{ height: 40, borderRadius: 12, border: '1px solid var(--border)' }} onClick={() => onEdit?.(place)}>
+                            <button className="btn btn-sm btn-ghost place-action-btn" onClick={() => onEdit?.(place)}>
                                 <Icon.Edit style={{ width: 14, height: 14, marginRight: 6 }} /> Edit
                             </button>
-                            <button className="btn btn-sm btn-ghost" style={{ height: 40, borderRadius: 12, border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--bad)' }} onClick={() => onDelete?.(place._id)}>
+                            <button className="btn btn-sm btn-ghost place-action-btn place-action-danger" onClick={() => onDelete?.(place._id)}>
                                 <Icon.Trash style={{ width: 14, height: 14, marginRight: 6 }} /> Delete
                             </button>
                         </>
@@ -315,57 +314,52 @@ export function PlaceDetailsView({ placeId, profile, getImgUrl, onShare, onCreat
                 </div>
             </div>
 
-            <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ position: 'relative', height: 420, background: 'var(--input-bg)' }}>
+            <div className="panel place-details-card">
+                <div className="place-details-hero">
                     {currentImage ? (
-                        <img src={getImgUrl(currentImage)} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={getImgUrl(currentImage)} alt={place.name} className="place-details-hero-img" />
                     ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
+                        <div className="place-details-hero-empty">
                             <Icon.Place style={{ width: 84, height: 84 }} />
                         </div>
                     )}
+                    <div className="place-details-hero-overlay" />
                 </div>
-                <div style={{ padding: 30 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16 }}>
+
+                <div className="place-details-body">
+                    <div className="place-details-head">
                         <div>
-                            <h2 style={{ fontSize: '2rem', marginBottom: 6 }}>{place.name}</h2>
-                            <div className="badge accent-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <h2 className="place-details-title">{place.name}</h2>
+                            <div className="badge accent-badge place-location-badge">
                                 <Icon.Place style={{ width: 14, height: 14 }} /> {place.location}
                             </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent)', lineHeight: 1 }}>{place.capacity || 0}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Capacity</div>
+
+                        <div className="place-details-capacity-box">
+                            <div className="place-details-capacity-num">{place.capacity || 0}</div>
+                            <div className="place-details-capacity-label">Capacity</div>
                         </div>
                     </div>
 
                     {canManage && place.status && place.status !== "approved" && (
-                        <div style={{ marginBottom: 16 }}>
+                        <div style={{ marginBottom: 12 }}>
                             <span className={`status-badge ${place.status}`}>{place.status}</span>
                         </div>
                     )}
 
-                    <p className="description-text" style={{ fontSize: '1.05rem', marginBottom: 24, opacity: 0.9, lineHeight: 1.6 }}>
+                    <p className="description-text place-details-desc">
                         {place.description || "No description provided."}
                     </p>
 
                     {place.images?.length > 1 && (
-                        <div>
-                            <h4 style={{ marginBottom: 14, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)' }}>Venue Gallery</h4>
-                            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }} className="custom-scrollbar">
+                        <div className="place-details-gallery-wrap">
+                            <h4 className="place-details-gallery-title">Venue Gallery</h4>
+                            <div className="place-details-gallery custom-scrollbar">
                                 {place.images.map((img, i) => (
                                     <div
                                         key={i}
                                         onClick={() => setCurrentImage(img)}
-                                        style={{
-                                            height: 90,
-                                            width: 140,
-                                            flexShrink: 0,
-                                            borderRadius: 10,
-                                            overflow: 'hidden',
-                                            cursor: 'pointer',
-                                            border: currentImage === img ? '3px solid var(--accent)' : '3px solid transparent'
-                                        }}
+                                        className={`place-thumb ${currentImage === img ? "active" : ""}`}
                                     >
                                         <img src={getImgUrl(img)} alt={`venue-thumb-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
