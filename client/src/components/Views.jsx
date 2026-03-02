@@ -260,6 +260,118 @@ export function EventDetailsView({ eventId, profile, getImgUrl, onBook, onShare,
     );
 }
 
+export function PlaceDetailsView({ placeId, profile, getImgUrl, onShare, onEdit, onDelete, changeView }) {
+    const fetcher = (url) => axiosInstance.get(url).then(res => res.data.data);
+    const { data, error, isLoading } = useSWR(placeId ? `/places/${placeId}` : null, fetcher);
+    const place = data?.place;
+    const [currentImage, setCurrentImage] = useState(null);
+
+    React.useEffect(() => {
+        if (place && (place.images?.[0] || place.image)) {
+            setCurrentImage(place.images?.[0] || place.image);
+        }
+    }, [place]);
+
+    if (isLoading) return <div className="panel" style={{ textAlign: 'center', padding: '100px 0' }}>Loading venue details...</div>;
+    if (error || !place) return (
+        <div className="panel" style={{ textAlign: 'center', padding: '100px 0' }}>
+            <h3 style={{ color: 'var(--bad)' }}>Venue Not Found</h3>
+            <p style={{ color: 'var(--muted)', marginTop: 12 }}>The venue you are looking for does not exist or has been removed.</p>
+            <button className="btn btn-sm btn-ghost" style={{ marginTop: 24 }} onClick={() => changeView("places")}>Go back to venues</button>
+        </div>
+    );
+
+    const isAdmin = profile?.role === "admin";
+    const isOwner = profile?._id && place.owner?._id && place.owner._id.toString() === profile._id.toString();
+    const canManage = profile && (isAdmin || isOwner);
+
+    return (
+        <div className="animate-fade-in" style={{ maxWidth: 1000, margin: '0 auto', paddingBottom: 60 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <button className="btn btn-sm btn-ghost" onClick={() => changeView("places")}>
+                    <Icon.ArrowRight style={{ transform: 'rotate(180deg)', width: 14, height: 14, marginRight: 8 }} /> Back to Venues
+                </button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <button className="btn btn-primary" style={{ height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => onShare(place, "venue")}>
+                        <Icon.Share style={{ width: 14, height: 14 }} /> Share Venue
+                    </button>
+                    {canManage && (
+                        <>
+                            <button className="btn btn-sm btn-ghost" style={{ height: 40, borderRadius: 12, border: '1px solid var(--border)' }} onClick={() => onEdit?.(place)}>
+                                <Icon.Edit style={{ width: 14, height: 14, marginRight: 6 }} /> Edit
+                            </button>
+                            <button className="btn btn-sm btn-ghost" style={{ height: 40, borderRadius: 12, border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--bad)' }} onClick={() => onDelete?.(place._id)}>
+                                <Icon.Trash style={{ width: 14, height: 14, marginRight: 6 }} /> Delete
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ position: 'relative', height: 420, background: 'var(--input-bg)' }}>
+                    {currentImage ? (
+                        <img src={getImgUrl(currentImage)} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
+                            <Icon.Place style={{ width: 84, height: 84 }} />
+                        </div>
+                    )}
+                </div>
+                <div style={{ padding: 30 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16 }}>
+                        <div>
+                            <h2 style={{ fontSize: '2rem', marginBottom: 6 }}>{place.name}</h2>
+                            <div className="badge accent-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Icon.Place style={{ width: 14, height: 14 }} /> {place.location}
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent)', lineHeight: 1 }}>{place.capacity || 0}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Capacity</div>
+                        </div>
+                    </div>
+
+                    {canManage && place.status && place.status !== "approved" && (
+                        <div style={{ marginBottom: 16 }}>
+                            <span className={`status-badge ${place.status}`}>{place.status}</span>
+                        </div>
+                    )}
+
+                    <p className="description-text" style={{ fontSize: '1.05rem', marginBottom: 24, opacity: 0.9, lineHeight: 1.6 }}>
+                        {place.description || "No description provided."}
+                    </p>
+
+                    {place.images?.length > 1 && (
+                        <div>
+                            <h4 style={{ marginBottom: 14, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)' }}>Venue Gallery</h4>
+                            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }} className="custom-scrollbar">
+                                {place.images.map((img, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => setCurrentImage(img)}
+                                        style={{
+                                            height: 90,
+                                            width: 140,
+                                            flexShrink: 0,
+                                            borderRadius: 10,
+                                            overflow: 'hidden',
+                                            cursor: 'pointer',
+                                            border: currentImage === img ? '3px solid var(--accent)' : '3px solid transparent'
+                                        }}
+                                    >
+                                        <img src={getImgUrl(img)} alt={`venue-thumb-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function RegisterView({ registerForm, setRegisterForm, onRegister, changeView, formErrors }) {
     return (
         <div className="auth-container animate-fade-in">
@@ -828,177 +940,86 @@ export function ProfileView({ profileForm, setProfileForm, onSave, onLogout, onD
     );
 }
 
- 
- e x p o r t   f u n c t i o n   P r o v i d e r D e t a i l s V i e w ( {   p r o v i d e r I d ,   p r o f i l e ,   g e t I m g U r l ,   p l a c e s ,   e v e n t s ,   c h a n g e V i e w ,   o n S h a r e ,   s e t S e l e c t e d P l a c e    } )   { 
-         c o n s t   {   d a t a :   u s e r D a t a ,   e r r o r ,   i s L o a d i n g    }   =   u s e S W R ( p r o v i d e r I d   ?   ' / u s e r s / '   +   p r o v i d e r I d   :   n u l l ,   a s y n c   ( u r l )   = >   { 
-                 c o n s t   r e s   =   a w a i t   a x i o s I n s t a n c e . g e t ( u r l ) ; 
-                 r e t u r n   r e s . d a t a ? . d a t a ? . u s e r ; 
-         
-    } ) ; 
- 
-         i f   ( i s L o a d i n g )   r e t u r n   < d i v   c l a s s N a m e = ' l o a d i n g - o v e r l a y ' > L o a d i n g   P r o v i d e r   i n f o . . . < / d i v > ; 
-         i f   ( e r r o r   | |   ! u s e r D a t a )   r e t u r n   < d i v   s t y l e = { {   c o l o r :   ' v a r ( - - b a d ) ' ,   p a d d i n g :   4 0 ,   t e x t A l i g n :   ' c e n t e r '    }  } > E r r o r   l o a d i n g   p r o v i d e r   o r   p r o v i d e r   n o t   f o u n d . < / d i v > ; 
- 
-         c o n s t   p r o v i d e r V e n u e s   =   p l a c e s . f i l t e r ( p   = >   p . o w n e r ? . _ i d   = = =   u s e r D a t a . _ i d ) ; 
-         c o n s t   p r o v i d e r E v e n t s   =   e v e n t s . f i l t e r ( e   = >   { 
-                 c o n s t   o r g I d   =   e . o r g a n i z e r ? . _ i d   | |   e . o r g a n i z e r ; 
-                 r e t u r n   o r g I d   = = =   u s e r D a t a . _ i d ; 
-         
-    } ) ; 
- 
-         r e t u r n   ( 
-                 < d i v   c l a s s N a m e = ' a n i m a t e - f a d e - i n '   s t y l e = { {   p a d d i n g B o t t o m :   4 0    }  } > 
-                         < b u t t o n   c l a s s N a m e = ' b t n   b t n - g h o s t '   s t y l e = { {   m a r g i n B o t t o m :   2 0 ,   d i s p l a y :   ' i n l i n e - f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   8    }  }   o n C l i c k = { ( )   = >   c h a n g e V i e w ( ' p l a c e s ' )  } > 
-                                 < I c o n . A r r o w R i g h t   s t y l e = { {   t r a n s f o r m :   ' r o t a t e ( 1 8 0 d e g ) ' ,   w i d t h :   1 6 ,   h e i g h t :   1 6    }  }   / >   B a c k 
-                         < / b u t t o n > 
- 
-                         < d i v   c l a s s N a m e = ' p a n e l '   s t y l e = { {   p a d d i n g :   4 0 ,   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   3 0 ,   m a r g i n B o t t o m :   4 0 ,   p o s i t i o n :   ' r e l a t i v e ' ,   o v e r f l o w :   ' h i d d e n '    }  } > 
-                                 < d i v   s t y l e = { {   p o s i t i o n :   ' a b s o l u t e ' ,   t o p :   0 ,   l e f t :   0 ,   r i g h t :   0 ,   h e i g h t :   8 0 ,   b a c k g r o u n d :   ' v a r ( - - a c c e n t - s o f t ) ' ,   p o i n t e r E v e n t s :   ' n o n e '    }  } > < / d i v > 
-                                 < d i v   s t y l e = { {   p o s i t i o n :   ' r e l a t i v e ' ,   z I n d e x :   1 ,   w i d t h :   1 2 0 ,   h e i g h t :   1 2 0 ,   b o r d e r R a d i u s :   ' 5 0 % ' ,   o v e r f l o w :   ' h i d d e n ' ,   b o r d e r :   ' 4 p x   s o l i d   v a r ( - - p a n e l ) ' ,   b a c k g r o u n d :   ' v a r ( - - i n p u t - b g ) ' ,   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   j u s t i f y C o n t e n t :   ' c e n t e r '    }  } > 
-                                         { u s e r D a t a . p r o f i l e I m a g e   ?   ( 
-                                                 < i m g   s r c = { g e t I m g U r l ( u s e r D a t a . p r o f i l e I m a g e )  }   a l t = { u s e r D a t a . f i r s t N a m e  }   s t y l e = { {   w i d t h :   ' 1 0 0 % ' ,   h e i g h t :   ' 1 0 0 % ' ,   o b j e c t F i t :   ' c o v e r '    }  }   / > 
-                                         )   :   ( 
-                                                 < I c o n . U s e r   s t y l e = { {   w i d t h :   6 0 ,   h e i g h t :   6 0 ,   o p a c i t y :   0 . 1    }  }   / > 
-                                         ) 
-    } 
-                                 < / d i v > 
-                                 < d i v   s t y l e = { {   p o s i t i o n :   ' r e l a t i v e ' ,   z I n d e x :   1 ,   f l e x :   1    }  } > 
-                                         < d i v   s t y l e = { {   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   1 2 ,   m a r g i n B o t t o m :   8    }  } > 
-                                                 < h 1   s t y l e = { {   m a r g i n :   0 ,   f o n t S i z e :   ' 2 r e m '    }  } > { u s e r D a t a . f i r s t N a m e  }   { u s e r D a t a . l a s t N a m e  } < / h 1 > 
-                                                 { u s e r D a t a . i s A p p r o v e d   & &   < s p a n   c l a s s N a m e = ' s t a t u s - b a d g e   a p p r o v e d '   s t y l e = { {   p a d d i n g :   ' 4 p x   8 p x ' ,   f o n t S i z e :   ' 0 . 7 r e m '    }  } > < I c o n . C h e c k C i r c l e   s t y l e = { {   w i d t h :   1 2 ,   h e i g h t :   1 2    }  }   / >   V e r i f i e d   P r o v i d e r < / s p a n >  } 
-                                         < / d i v > 
-                                         < d i v   s t y l e = { {   d i s p l a y :   ' f l e x ' ,   g a p :   1 6 ,   c o l o r :   ' v a r ( - - m u t e d ) ' ,   f o n t S i z e :   ' 0 . 9 r e m ' ,   f l e x W r a p :   ' w r a p '    }  } > 
-                                                 < d i v   s t y l e = { {   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   6    }  } > < I c o n . U s e r   s t y l e = { {   w i d t h :   1 4 ,   h e i g h t :   1 4    }  }   / >   { u s e r D a t a . r o l e   = = =   ' p l a c e _ o w n e r '   ?   ' V e n u e   O w n e r '   :   ' E v e n t   O r g a n i z e r ' } < / d i v > 
-                                                 < d i v   s t y l e = { {   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   6    }  } > < I c o n . D a t e   s t y l e = { {   w i d t h :   1 4 ,   h e i g h t :   1 4    }  }   / >   J o i n e d   { n e w   D a t e ( u s e r D a t a . c r e a t e d A t ) . t o L o c a l e D a t e S t r i n g ( ) } < / d i v > 
-                                         < / d i v > 
-                                 < / d i v > 
-                         < / d i v > 
- 
-                         { p r o v i d e r V e n u e s . l e n g t h   >   0   & &   ( 
-                                 < d i v   s t y l e = { {   m a r g i n B o t t o m :   4 0    }  } > 
-                                         < h 2   s t y l e = { {   f o n t S i z e :   ' 1 . 5 r e m ' ,   m a r g i n B o t t o m :   2 0    }  } > L i s t e d   V e n u e s < / h 2 > 
-                                         < d i v   c l a s s N a m e = ' g r i d ' > 
-                                                 { p r o v i d e r V e n u e s . m a p ( p   = >   ( 
-                                                         < V e n u e C a r d   k e y = { p . _ i d  }   p = { p  }   p r o f i l e = { p r o f i l e  }   g e t I m g U r l = { g e t I m g U r l  }   o n S e l e c t = { ( )   = >   s e t S e l e c t e d P l a c e ( p )  }   o n S h a r e = { o n S h a r e  }   / > 
-                                                 ) ) 
-        } 
-                                         < / d i v > 
-                                 < / d i v > 
-                         ) 
-    } 
- 
-                         { p r o v i d e r E v e n t s . l e n g t h   >   0   & &   ( 
-                                 < d i v > 
-                                         < h 2   s t y l e = { {   f o n t S i z e :   ' 1 . 5 r e m ' ,   m a r g i n B o t t o m :   2 0    }  } > H o s t e d   E v e n t s < / h 2 > 
-                                         < d i v   c l a s s N a m e = ' g r i d ' > 
-                                                 { p r o v i d e r E v e n t s . m a p ( e v   = >   ( 
-                                                         < E v e n t C a r d   k e y = { e v . _ i d  }   e v = { e v  }   p r o f i l e = { p r o f i l e  }   o n S h a r e = { o n S h a r e  }   o n V i e w D e t a i l s = { ( e )   = >   c h a n g e V i e w ( ' e v e n t s / '   +   e . _ i d )  }   g e t I m g U r l = { g e t I m g U r l  }   / > 
-                                                 ) ) 
-        } 
-                                         < / d i v > 
-                                 < / d i v > 
-                         ) 
-    } 
-                         
-                         { p r o v i d e r V e n u e s . l e n g t h   = = =   0   & &   p r o v i d e r E v e n t s . l e n g t h   = = =   0   & &   ( 
-                                   < d i v   c l a s s N a m e = ' p a n e l '   s t y l e = { {   t e x t A l i g n :   ' c e n t e r ' ,   p a d d i n g :   ' 6 0 p x   2 0 p x ' ,   c o l o r :   ' v a r ( - - m u t e d ) '    }  } > 
-                                         < I c o n . P l a c e   s t y l e = { {   w i d t h :   4 8 ,   h e i g h t :   4 8 ,   o p a c i t y :   0 . 1 ,   m a r g i n B o t t o m :   1 6 ,   m a r g i n :   ' 0   a u t o ' ,   d i s p l a y :   ' b l o c k '    }  }   / > 
-                                         < p > T h i s   u s e r   h a s   n o t   l i s t e d   a n y   p u b l i c   v e n u e s   o r   e v e n t s   y e t . < / p > 
-                                   < / d i v > 
-                         ) 
-    } 
-                 < / d i v > 
-         ) ; 
- 
-} 
- 
- 
- 
- 
 
-e x p o r t   f u n c t i o n   P r o v i d e r D e t a i l s V i e w ( {   p r o v i d e r I d ,   p r o f i l e ,   g e t I m g U r l ,   p l a c e s ,   e v e n t s ,   c h a n g e V i e w ,   o n S h a r e ,   s e t S e l e c t e d P l a c e    } )   { 
-         c o n s t   {   d a t a :   u s e r D a t a ,   e r r o r ,   i s L o a d i n g    }   =   u s e S W R ( p r o v i d e r I d   ?   ' / u s e r s / '   +   p r o v i d e r I d   :   n u l l ,   a s y n c   ( u r l )   = >   { 
-                 c o n s t   r e s   =   a w a i t   a x i o s I n s t a n c e . g e t ( u r l ) ; 
-                 r e t u r n   r e s . d a t a ? . d a t a ? . u s e r ; 
-         
-    } ) ; 
- 
-         i f   ( i s L o a d i n g )   r e t u r n   < d i v   c l a s s N a m e = ' l o a d i n g - o v e r l a y ' > L o a d i n g   P r o v i d e r   i n f o . . . < / d i v > ; 
-         i f   ( e r r o r   | |   ! u s e r D a t a )   r e t u r n   < d i v   s t y l e = { {   c o l o r :   ' v a r ( - - b a d ) ' ,   p a d d i n g :   4 0 ,   t e x t A l i g n :   ' c e n t e r '    }  } > E r r o r   l o a d i n g   p r o v i d e r   o r   p r o v i d e r   n o t   f o u n d . < / d i v > ; 
- 
-         c o n s t   p r o v i d e r V e n u e s   =   p l a c e s . f i l t e r ( p   = >   p . o w n e r ? . _ i d   = = =   u s e r D a t a . _ i d ) ; 
-         c o n s t   p r o v i d e r E v e n t s   =   e v e n t s . f i l t e r ( e   = >   { 
-                 c o n s t   o r g I d   =   e . o r g a n i z e r ? . _ i d   | |   e . o r g a n i z e r ; 
-                 r e t u r n   o r g I d   = = =   u s e r D a t a . _ i d ; 
-         
-    } ) ; 
- 
-         r e t u r n   ( 
-                 < d i v   c l a s s N a m e = ' a n i m a t e - f a d e - i n '   s t y l e = { {   p a d d i n g B o t t o m :   4 0    }  } > 
-                         < b u t t o n   c l a s s N a m e = ' b t n   b t n - g h o s t '   s t y l e = { {   m a r g i n B o t t o m :   2 0 ,   d i s p l a y :   ' i n l i n e - f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   8    }  }   o n C l i c k = { ( )   = >   c h a n g e V i e w ( ' p l a c e s ' )  } > 
-                                 < I c o n . A r r o w R i g h t   s t y l e = { {   t r a n s f o r m :   ' r o t a t e ( 1 8 0 d e g ) ' ,   w i d t h :   1 6 ,   h e i g h t :   1 6    }  }   / >   B a c k 
-                         < / b u t t o n > 
- 
-                         < d i v   c l a s s N a m e = ' p a n e l '   s t y l e = { {   p a d d i n g :   4 0 ,   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   3 0 ,   m a r g i n B o t t o m :   4 0 ,   p o s i t i o n :   ' r e l a t i v e ' ,   o v e r f l o w :   ' h i d d e n '    }  } > 
-                                 < d i v   s t y l e = { {   p o s i t i o n :   ' a b s o l u t e ' ,   t o p :   0 ,   l e f t :   0 ,   r i g h t :   0 ,   h e i g h t :   8 0 ,   b a c k g r o u n d :   ' v a r ( - - a c c e n t - s o f t ) ' ,   p o i n t e r E v e n t s :   ' n o n e '    }  } > < / d i v > 
-                                 < d i v   s t y l e = { {   p o s i t i o n :   ' r e l a t i v e ' ,   z I n d e x :   1 ,   w i d t h :   1 2 0 ,   h e i g h t :   1 2 0 ,   b o r d e r R a d i u s :   ' 5 0 % ' ,   o v e r f l o w :   ' h i d d e n ' ,   b o r d e r :   ' 4 p x   s o l i d   v a r ( - - p a n e l ) ' ,   b a c k g r o u n d :   ' v a r ( - - i n p u t - b g ) ' ,   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   j u s t i f y C o n t e n t :   ' c e n t e r '    }  } > 
-                                         { u s e r D a t a . p r o f i l e I m a g e   ?   ( 
-                                                 < i m g   s r c = { g e t I m g U r l ( u s e r D a t a . p r o f i l e I m a g e )  }   a l t = { u s e r D a t a . f i r s t N a m e  }   s t y l e = { {   w i d t h :   ' 1 0 0 % ' ,   h e i g h t :   ' 1 0 0 % ' ,   o b j e c t F i t :   ' c o v e r '    }  }   / > 
-                                         )   :   ( 
-                                                 < I c o n . U s e r   s t y l e = { {   w i d t h :   6 0 ,   h e i g h t :   6 0 ,   o p a c i t y :   0 . 1    }  }   / > 
-                                         ) 
-    } 
-                                 < / d i v > 
-                                 < d i v   s t y l e = { {   p o s i t i o n :   ' r e l a t i v e ' ,   z I n d e x :   1 ,   f l e x :   1    }  } > 
-                                         < d i v   s t y l e = { {   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   1 2 ,   m a r g i n B o t t o m :   8    }  } > 
-                                                 < h 1   s t y l e = { {   m a r g i n :   0 ,   f o n t S i z e :   ' 2 r e m '    }  } > { u s e r D a t a . f i r s t N a m e  }   { u s e r D a t a . l a s t N a m e  } < / h 1 > 
-                                                 { u s e r D a t a . i s A p p r o v e d   & &   < s p a n   c l a s s N a m e = ' s t a t u s - b a d g e   a p p r o v e d '   s t y l e = { {   p a d d i n g :   ' 4 p x   8 p x ' ,   f o n t S i z e :   ' 0 . 7 r e m '    }  } > < I c o n . C h e c k C i r c l e   s t y l e = { {   w i d t h :   1 2 ,   h e i g h t :   1 2    }  }   / >   V e r i f i e d   P r o v i d e r < / s p a n >  } 
-                                         < / d i v > 
-                                         < d i v   s t y l e = { {   d i s p l a y :   ' f l e x ' ,   g a p :   1 6 ,   c o l o r :   ' v a r ( - - m u t e d ) ' ,   f o n t S i z e :   ' 0 . 9 r e m ' ,   f l e x W r a p :   ' w r a p '    }  } > 
-                                                 < d i v   s t y l e = { {   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   6    }  } > < I c o n . U s e r   s t y l e = { {   w i d t h :   1 4 ,   h e i g h t :   1 4    }  }   / >   { u s e r D a t a . r o l e   = = =   ' p l a c e _ o w n e r '   ?   ' V e n u e   O w n e r '   :   ' E v e n t   O r g a n i z e r ' } < / d i v > 
-                                                 < d i v   s t y l e = { {   d i s p l a y :   ' f l e x ' ,   a l i g n I t e m s :   ' c e n t e r ' ,   g a p :   6    }  } > < I c o n . D a t e   s t y l e = { {   w i d t h :   1 4 ,   h e i g h t :   1 4    }  }   / >   J o i n e d   { n e w   D a t e ( u s e r D a t a . c r e a t e d A t ) . t o L o c a l e D a t e S t r i n g ( ) } < / d i v > 
-                                         < / d i v > 
-                                 < / d i v > 
-                         < / d i v > 
- 
-                         { p r o v i d e r V e n u e s . l e n g t h   >   0   & &   ( 
-                                 < d i v   s t y l e = { {   m a r g i n B o t t o m :   4 0    }  } > 
-                                         < h 2   s t y l e = { {   f o n t S i z e :   ' 1 . 5 r e m ' ,   m a r g i n B o t t o m :   2 0    }  } > L i s t e d   V e n u e s < / h 2 > 
-                                         < d i v   c l a s s N a m e = ' g r i d ' > 
-                                                 { p r o v i d e r V e n u e s . m a p ( p   = >   ( 
-                                                         < V e n u e C a r d   k e y = { p . _ i d  }   p = { p  }   p r o f i l e = { p r o f i l e  }   g e t I m g U r l = { g e t I m g U r l  }   o n S e l e c t = { ( )   = >   s e t S e l e c t e d P l a c e ( p )  }   o n S h a r e = { o n S h a r e  }   / > 
-                                                 ) ) 
-        } 
-                                         < / d i v > 
-                                 < / d i v > 
-                         ) 
-    } 
- 
-                         { p r o v i d e r E v e n t s . l e n g t h   >   0   & &   ( 
-                                 < d i v > 
-                                         < h 2   s t y l e = { {   f o n t S i z e :   ' 1 . 5 r e m ' ,   m a r g i n B o t t o m :   2 0    }  } > H o s t e d   E v e n t s < / h 2 > 
-                                         < d i v   c l a s s N a m e = ' g r i d ' > 
-                                                 { p r o v i d e r E v e n t s . m a p ( e v   = >   ( 
-                                                         < E v e n t C a r d   k e y = { e v . _ i d  }   e v = { e v  }   p r o f i l e = { p r o f i l e  }   o n S h a r e = { o n S h a r e  }   o n V i e w D e t a i l s = { ( e )   = >   c h a n g e V i e w ( ' e v e n t s / '   +   e . _ i d )  }   g e t I m g U r l = { g e t I m g U r l  }   / > 
-                                                 ) ) 
-        } 
-                                         < / d i v > 
-                                 < / d i v > 
-                         ) 
-    } 
-                         
-                         { p r o v i d e r V e n u e s . l e n g t h   = = =   0   & &   p r o v i d e r E v e n t s . l e n g t h   = = =   0   & &   ( 
-                                   < d i v   c l a s s N a m e = ' p a n e l '   s t y l e = { {   t e x t A l i g n :   ' c e n t e r ' ,   p a d d i n g :   ' 6 0 p x   2 0 p x ' ,   c o l o r :   ' v a r ( - - m u t e d ) '    }  } > 
-                                         < I c o n . P l a c e   s t y l e = { {   w i d t h :   4 8 ,   h e i g h t :   4 8 ,   o p a c i t y :   0 . 1 ,   m a r g i n B o t t o m :   1 6 ,   m a r g i n :   ' 0   a u t o ' ,   d i s p l a y :   ' b l o c k '    }  }   / > 
-                                         < p > T h i s   u s e r   h a s   n o t   l i s t e d   a n y   p u b l i c   v e n u e s   o r   e v e n t s   y e t . < / p > 
-                                   < / d i v > 
-                         ) 
-    } 
-                 < / d i v > 
-         ) ; 
- 
-} 
- 
- 
- 
- 
+export function ProviderDetailsView({ providerId, profile, getImgUrl, places, events, changeView, onShare, setSelectedPlace  }) {
+    const { data: userData, error, isLoading  } = useSWR(providerId ? '/users/' + providerId : null, async (url) => {
+        const res = await axiosInstance.get(url);
+        return res.data?.data?.user;
+    
+    });
+
+    if (isLoading) return <div className='loading-overlay'>Loading Provider info...</div>;
+    if (error || !userData) return <div style={{ color: 'var(--bad)', padding: 40, textAlign: 'center'  } }>Error loading provider or provider not found.</div>;
+
+    const providerVenues = places.filter(p => p.owner?._id === userData._id);
+    const providerEvents = events.filter(e => {
+        const orgId = e.organizer?._id || e.organizer;
+        return orgId === userData._id;
+    
+    });
+
+    return (
+        <div className='animate-fade-in' style={{ paddingBottom: 40  } }>
+            <button className='btn btn-ghost' style={{ marginBottom: 20, display: 'inline-flex', alignItems: 'center', gap: 8  } } onClick={() => changeView('places') }>
+                <Icon.ArrowRight style={{ transform: 'rotate(180deg)', width: 16, height: 16  } } /> Back
+            </button>
+
+            <div className='panel' style={{ padding: 40, display: 'flex', alignItems: 'center', gap: 30, marginBottom: 40, position: 'relative', overflow: 'hidden'  } }>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, background: 'var(--accent-soft)', pointerEvents: 'none'  } }></div>
+                <div style={{ position: 'relative', zIndex: 1, width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', border: '4px solid var(--panel)', background: 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center'  } }>
+                    {userData.profileImage ? (
+                        <img src={getImgUrl(userData.profileImage) } alt={userData.firstName } style={{ width: '100%', height: '100%', objectFit: 'cover'  } } />
+                    ) : (
+                        <Icon.User style={{ width: 60, height: 60, opacity: 0.1  } } />
+                    )
+    }
+                </div>
+                <div style={{ position: 'relative', zIndex: 1, flex: 1  } }>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8  } }>
+                        <h1 style={{ margin: 0, fontSize: '2rem'  } }>{userData.firstName } {userData.lastName }</h1>
+                        {userData.isApproved && <span className='status-badge approved' style={{ padding: '4px 8px', fontSize: '0.7rem'  } }><Icon.CheckCircle style={{ width: 12, height: 12  } } /> Verified Provider</span> }
+                    </div>
+                    <div style={{ display: 'flex', gap: 16, color: 'var(--muted)', fontSize: '0.9rem', flexWrap: 'wrap'  } }>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6  } }><Icon.User style={{ width: 14, height: 14  } } /> {userData.role === 'place_owner' ? 'Venue Owner' : 'Event Organizer'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6  } }><Icon.Date style={{ width: 14, height: 14  } } /> Joined {new Date(userData.createdAt).toLocaleDateString()}</div>
+                    </div>
+                </div>
+            </div>
+
+            {providerVenues.length > 0 && (
+                <div style={{ marginBottom: 40  } }>
+                    <h2 style={{ fontSize: '1.5rem', marginBottom: 20  } }>Listed Venues</h2>
+                    <div className='grid'>
+                        {providerVenues.map(p => (
+                            <VenueCard key={p._id } p={p } profile={profile } getImgUrl={getImgUrl } onSelect={() => setSelectedPlace(p) } onShare={onShare } />
+                        ))
+        }
+                    </div>
+                </div>
+            )
+    }
+
+            {providerEvents.length > 0 && (
+                <div>
+                    <h2 style={{ fontSize: '1.5rem', marginBottom: 20  } }>Hosted Events</h2>
+                    <div className='grid'>
+                        {providerEvents.map(ev => (
+                            <EventCard key={ev._id } ev={ev } profile={profile } onShare={onShare } onViewDetails={(e) => changeView('events/' + e._id) } getImgUrl={getImgUrl } />
+                        ))
+        }
+                    </div>
+                </div>
+            )
+    }
+            
+            {providerVenues.length === 0 && providerEvents.length === 0 && (
+                 <div className='panel' style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)'  } }>
+                    <Icon.Place style={{ width: 48, height: 48, opacity: 0.1, marginBottom: 16, margin: '0 auto', display: 'block'  } } />
+                    <p>This user has not listed any public venues or events yet.</p>
+                 </div>
+            )
+    }
+        </div>
+    );
+
+}

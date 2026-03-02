@@ -2,6 +2,12 @@
 
 A premium event management and venue booking platform designed for seamless interaction between users, event organizers, and venue owners.
 
+## Latest Updates
+
+- Venue deep links: sharing a venue now copies a direct link in the format `/places/:id`.
+- Dedicated venue details route: opening venue details now uses a standalone page at `/places/:id`.
+- Event card UX: clicking the event image now opens the event details page directly.
+
 ## Core Features
 
 ### Role-Based Access Control

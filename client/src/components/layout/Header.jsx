@@ -11,7 +11,7 @@ export function Header({
         <header className="content-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
                 <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-                    {view === "event_details" ? "Event Details" : view.charAt(0).toUpperCase() + view.slice(1).replace("Mgmt", "Management").replace("_", " ")}
+                    {view === "event_details" ? "Event Details" : view === "place_details" ? "Venue Details" : view.charAt(0).toUpperCase() + view.slice(1).replace("Mgmt", "Management").replace("_", " ")}
                 </h2>
                 {profile && (
                     <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>

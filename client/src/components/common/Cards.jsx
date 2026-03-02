@@ -117,7 +117,11 @@ export function EventCard({ ev, profile, onEdit, onDelete, onBook, onShare, onVi
                 </div>
             </div>
 
-            <div style={{ position: 'relative', height: 160, borderRadius: 12, overflow: 'hidden', marginBottom: 20, background: 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+                style={{ position: 'relative', height: 160, borderRadius: 12, overflow: 'hidden', marginBottom: 20, background: 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: onViewDetails ? 'pointer' : 'default' }}
+                onClick={() => onViewDetails?.(ev)}
+                title={onViewDetails ? "View event details" : undefined}
+            >
                 {ev.images?.[0] ? (
                     <img src={getImgUrl(ev.images[0])} alt={ev.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
