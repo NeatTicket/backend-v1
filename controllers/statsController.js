@@ -30,9 +30,9 @@ const getOverviewStats = asyncWrapper(async (req, res) => {
 
 const getPublicStats = asyncWrapper(async (req, res) => {
   const [events, upcomingEvents, places] = await Promise.all([
-    Event.countDocuments(),
-    Event.countDocuments({ date: { $gte: new Date() } }),
-    Place.countDocuments(),
+    Event.countDocuments({ status: "approved" }),
+    Event.countDocuments({ status: "approved", date: { $gte: new Date() } }),
+    Place.countDocuments({ status: "approved" }),
   ]);
 
   res.json({
@@ -42,4 +42,3 @@ const getPublicStats = asyncWrapper(async (req, res) => {
 });
 
 module.exports = { getOverviewStats, getPublicStats };
-
