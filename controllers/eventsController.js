@@ -238,10 +238,9 @@ const updateEvent = asyncWrapper(async (req, res, next) => {
   }
 
   const isOwner = event.organizer.toString() === req.user._id.toString();
-  const isAdmin = req.user.role === "admin";
 
-  if (!isOwner && !isAdmin) {
-    return next(new AppError("Not authorized to update this event", 403, httpStatusText.FAIL));
+  if (!isOwner) {
+    return next(new AppError("Only the organizer can update this event", 403, httpStatusText.FAIL));
   }
 
   // Whitelist only safe updatable fields

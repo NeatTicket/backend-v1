@@ -435,7 +435,15 @@ export function TicketsView({ tickets, getTicketStatusBadge, getImgUrl, useTicke
     );
 }
 
-export function MyVenuesView({ profile, places, editingPlaceId, setEditingPlaceId, placeForm, setPlaceForm, onSave, onStartEdit, onDelete, onSelect, setRejectModal, setRejectReason, updatePlaceStatus, run, initialPlace, getImgUrl }) {
+export function MyVenuesView({ profile, places, editingPlaceId, setEditingPlaceId, placeForm, setPlaceForm, onSave, onStartEdit, onDelete, onSelect, setRejectModal, setRejectReason, updatePlaceStatus, run, initialPlace, getImgUrl, search, searchCategory, forcePersonalOnly, forceGlobalOnly }) {
+    const isAdmin = profile?.role === "admin";
+    const filteredPlaces = places.filter(p => {
+        if (search && searchCategory !== "all" && searchCategory !== "venues") return false;
+        return !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.location.toLowerCase().includes(search.toLowerCase());
+    });
+
+    const showPersonal = !forceGlobalOnly;
+    const showGlobal = (isAdmin && !forcePersonalOnly);
     return (
         <div className="animate-fade-in">
             {(!profile?.isApproved && profile?.role !== "admin") && (
@@ -445,7 +453,7 @@ export function MyVenuesView({ profile, places, editingPlaceId, setEditingPlaceI
                 </div>
             )}
 
-            {profile?.role === "admin" && places.filter(p => p.status === "pending").length > 0 && (
+            {showGlobal && places.filter(p => p.status === "pending").length > 0 && (
                 <div style={{ marginBottom: 40 }}>
                     <h3 style={{ marginBottom: 16 }}>Venue Approval Queue ({places.filter(p => p.status === "pending").length})</h3>
                     <div className="grid">
@@ -465,7 +473,7 @@ export function MyVenuesView({ profile, places, editingPlaceId, setEditingPlaceI
                 </div>
             )}
 
-            {(profile?.role === "admin" || (profile?.role === "place_owner" && profile?.isApproved)) && (
+            {showPersonal && (profile?.role === "admin" || (profile?.role === "place_owner" && profile?.isApproved)) && (
                 <section className="panel" style={{ maxWidth: 500, marginBottom: 40 }}>
                     <h3>{editingPlaceId ? "Update Venue" : "List New Venue"}</h3>
                     <input placeholder="Venue Name" value={placeForm.name} onChange={e => setPlaceForm({ ...placeForm, name: e.target.value })} />
@@ -483,22 +491,50 @@ export function MyVenuesView({ profile, places, editingPlaceId, setEditingPlaceI
                 </section>
             )}
 
-            <h3 style={{ marginBottom: 16 }}>Your Venues</h3>
-            <div className="grid">
-                {places.filter(p => p.owner?._id === profile?._id).map(p => (
-                    <VenueCard key={p._id} p={p} profile={profile} getImgUrl={getImgUrl} onEdit={() => onStartEdit(p)} onDelete={() => onDelete(p._id)} onSelect={() => onSelect(p)} />
-                ))}
-            </div>
+            {showPersonal && (
+                <>
+                    <h3 style={{ marginBottom: 16 }}>{isAdmin ? "Your Managed Venues" : "Your Venues"}</h3>
+                    <div className="grid">
+                        {filteredPlaces.filter(p => p.owner?._id === profile?._id).map(p => (
+                            <VenueCard key={p._id} p={p} profile={profile} getImgUrl={getImgUrl} onEdit={() => onStartEdit(p)} onDelete={() => onDelete(p._id)} onSelect={() => onSelect(p)} />
+                        ))}
+                        {filteredPlaces.filter(p => p.owner?._id === profile?._id).length === 0 && (
+                            <div className="panel" style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>No personal venues found.</div>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {showGlobal && (
+                <>
+                    <h3 style={{ marginTop: 40, marginBottom: 16 }}>Global Venue Moderation</h3>
+                    <div className="grid">
+                        {filteredPlaces.filter(p => p.owner?._id !== profile?._id).map(p => (
+                            <VenueCard key={p._id} p={p} profile={profile} getImgUrl={getImgUrl} onEdit={null} onDelete={() => onDelete(p._id)} onSelect={() => onSelect(p)} />
+                        ))}
+                        {filteredPlaces.filter(p => p.owner?._id !== profile?._id).length === 0 && (
+                            <div className="panel" style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>No venues matching search found in moderation.</div>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 }
 
-export function MyEventsView({ profile, events, places, editingEventId, setEditingEventId, eventForm, setEventForm, onSave, onStartEdit, onDelete, onApprove, onShare, onViewDetails, setRejectModal, setRejectReason, run, initialEvent, loadAvailability, getImgUrl }) {
+export function MyEventsView({ profile, events, places, editingEventId, setEditingEventId, eventForm, setEventForm, onSave, onStartEdit, onDelete, onApprove, onShare, onViewDetails, setRejectModal, setRejectReason, run, initialEvent, loadAvailability, getImgUrl, search, searchCategory, forcePersonalOnly, forceGlobalOnly }) {
     const isAdmin = profile?.role === "admin";
+    const filteredEvents = events.filter(ev => {
+        if (search && searchCategory !== "all" && searchCategory !== "events") return false;
+        return !search || ev.name.toLowerCase().includes(search.toLowerCase()) || (ev.displayLocation || "").toLowerCase().includes(search.toLowerCase());
+    });
+
+    const showPersonal = !forceGlobalOnly;
+    const showGlobal = (isAdmin && !forcePersonalOnly);
 
     return (
         <div className="animate-fade-in">
-            {profile?.role === "admin" && (
+            {showGlobal && (
                 <div style={{ marginBottom: 40 }}>
                     <h3 style={{ marginBottom: 16 }}>Waiting for Global Review (Public Locations)</h3>
                     <div className="grid">
@@ -518,55 +554,82 @@ export function MyEventsView({ profile, events, places, editingEventId, setEditi
                 </div>
             )}
 
-            <section className="panel" style={{ maxWidth: 500, marginBottom: 40 }}>
-                <h3 style={{ marginBottom: 20 }}>{editingEventId ? "Update Event" : "Create New Event"}</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <input placeholder="Event Name" value={eventForm.name} onChange={e => setEventForm({ ...eventForm, name: e.target.value })} />
-                    <textarea placeholder="Description" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} style={{ width: '100%', background: 'var(--input-bg)', color: 'var(--ink)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px', fontSize: '1rem' }} rows={4} />
+            {showPersonal && (
+                <section className="panel" style={{ maxWidth: 500, marginBottom: 40 }}>
+                    <h3 style={{ marginBottom: 20 }}>{editingEventId ? "Update Event" : "Create New Event"}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <input placeholder="Event Name" value={eventForm.name} onChange={e => setEventForm({ ...eventForm, name: e.target.value })} />
+                        <textarea placeholder="Description" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} style={{ width: '100%', background: 'var(--input-bg)', color: 'var(--ink)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px', fontSize: '1rem' }} rows={4} />
 
-                    <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Event Date & Time</div>
-                        <input type="datetime-local" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} />
-                    </div>
-
-                    <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Event Photos (Optional)</div>
-                        <input type="file" multiple accept="image/*" onChange={e => setEventForm({ ...eventForm, imageFiles: Array.from(e.target.files) })} style={{ padding: '8px' }} />
-                        {eventForm.imageFiles?.length > 0 && <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginTop: 4 }}>{eventForm.imageFiles.length} files selected</div>}
-                    </div>
-
-                    <div className="tab-group" style={{ display: 'flex', background: 'var(--input-bg)', padding: 4, borderRadius: 12, border: '1px solid var(--border)', margin: '12px 0' }}>
-                        <button className={`btn btn-sm ${!eventForm.isCustomLocation ? 'btn-primary' : ''}`} style={{ flex: 1, border: 'none', background: !eventForm.isCustomLocation ? 'var(--accent)' : 'transparent', color: !eventForm.isCustomLocation ? '#fff' : 'var(--muted)', height: 32, borderRadius: 8 }} onClick={() => setEventForm({ ...eventForm, isCustomLocation: false, locationName: "" })}>Venue</button>
-                        <button className={`btn btn-sm ${eventForm.isCustomLocation ? 'btn-primary' : ''}`} style={{ flex: 1, border: 'none', background: eventForm.isCustomLocation ? 'var(--accent)' : 'transparent', color: eventForm.isCustomLocation ? '#fff' : 'var(--muted)', height: 32, borderRadius: 8 }} onClick={() => setEventForm({ ...eventForm, isCustomLocation: true, place: "" })}>Public</button>
-                    </div>
-
-                    {!eventForm.isCustomLocation ? (
                         <div>
-                            <select value={eventForm.place} onChange={e => setEventForm({ ...eventForm, place: e.target.value })}>
-                                <option value="">Select Venue...</option>
-                                {places.filter(p => p.status === "approved").map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                            </select>
-                            {eventForm.place && <button className="btn btn-sm btn-ghost" style={{ width: '100%', marginTop: 4 }} onClick={() => { const p = places.find(pl => pl._id === eventForm.place); if (p) loadAvailability(p._id, p.name); }}>Check Availability</button>}
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Event Date & Time</div>
+                            <input type="datetime-local" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} />
                         </div>
-                    ) : (
-                        <input placeholder="Enter Location Name..." value={eventForm.locationName} onChange={e => setEventForm({ ...eventForm, locationName: e.target.value })} />
-                    )}
 
-                    <input type="number" placeholder="Max Tickets" value={eventForm.maxTickets} onChange={e => setEventForm({ ...eventForm, maxTickets: e.target.value })} style={{ marginTop: 12 }} />
+                        <div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Event Photos (Optional)</div>
+                            <input type="file" multiple accept="image/*" onChange={e => setEventForm({ ...eventForm, imageFiles: Array.from(e.target.files) })} style={{ padding: '8px' }} />
+                            {eventForm.imageFiles?.length > 0 && <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginTop: 4 }}>{eventForm.imageFiles.length} files selected</div>}
+                        </div>
 
-                    <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                        <button className="btn btn-primary" style={{ flex: 1 }} onClick={onSave}>{editingEventId ? "Save Changes" : "Create Event"}</button>
-                        {editingEventId && <button className="btn btn-ghost" onClick={() => { setEditingEventId(null); setEventForm(initialEvent); }}>Cancel</button>}
+                        <div className="tab-group" style={{ display: 'flex', background: 'var(--input-bg)', padding: 4, borderRadius: 12, border: '1px solid var(--border)', margin: '12px 0' }}>
+                            <button className={`btn btn-sm ${!eventForm.isCustomLocation ? 'btn-primary' : ''}`} style={{ flex: 1, border: 'none', background: !eventForm.isCustomLocation ? 'var(--accent)' : 'transparent', color: !eventForm.isCustomLocation ? '#fff' : 'var(--muted)', height: 32, borderRadius: 8 }} onClick={() => setEventForm({ ...eventForm, isCustomLocation: false, locationName: "" })}>Venue</button>
+                            <button className={`btn btn-sm ${eventForm.isCustomLocation ? 'btn-primary' : ''}`} style={{ flex: 1, border: 'none', background: eventForm.isCustomLocation ? 'var(--accent)' : 'transparent', color: eventForm.isCustomLocation ? '#fff' : 'var(--muted)', height: 32, borderRadius: 8 }} onClick={() => setEventForm({ ...eventForm, isCustomLocation: true, place: "" })}>Public</button>
+                        </div>
+
+                        {!eventForm.isCustomLocation ? (
+                            <div>
+                                <select value={eventForm.place} onChange={e => setEventForm({ ...eventForm, place: e.target.value })}>
+                                    <option value="">Select Venue...</option>
+                                    {places.filter(p => p.status === "approved" || isAdmin).map(p => (
+                                        <option key={p._id} value={p._id}>
+                                            {p.name} {isAdmin && p.owner ? `(Owner: ${p.owner.firstName})` : ""}
+                                        </option>
+                                    ))}
+                                </select>
+                                {eventForm.place && <button className="btn btn-sm btn-ghost" style={{ width: '100%', marginTop: 4 }} onClick={() => { const p = places.find(pl => pl._id === eventForm.place); if (p) loadAvailability(p._id, p.name); }}>Check Availability</button>}
+                            </div>
+                        ) : (
+                            <input placeholder="Enter Location Name..." value={eventForm.locationName} onChange={e => setEventForm({ ...eventForm, locationName: e.target.value })} />
+                        )}
+
+                        <input type="number" placeholder="Max Tickets" value={eventForm.maxTickets} onChange={e => setEventForm({ ...eventForm, maxTickets: e.target.value })} style={{ marginTop: 12 }} />
+
+                        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={onSave}>{editingEventId ? "Save Changes" : "Create Event"}</button>
+                            {editingEventId && <button className="btn btn-ghost" onClick={() => { setEditingEventId(null); setEventForm(initialEvent); }}>Cancel</button>}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            )}
 
-            <h3 style={{ marginBottom: 16 }}>Manage Your Events</h3>
-            <div className="grid">
-                {events.filter(ev => ev.organizer?._id === profile?._id).map(ev => (
-                    <EventCard key={ev._id} ev={ev} profile={profile} getImgUrl={getImgUrl} onEdit={() => onStartEdit(ev)} onDelete={() => onDelete(ev._id)} onShare={onShare} onViewDetails={onViewDetails} />
-                ))}
-            </div>
+            {showPersonal && (
+                <>
+                    <h3 style={{ marginBottom: 16 }}>{isAdmin ? "Your Personal Events" : "Manage Your Events"}</h3>
+                    <div className="grid">
+                        {filteredEvents.filter(ev => ev.organizer?._id === profile?._id).map(ev => (
+                            <EventCard key={ev._id} ev={ev} profile={profile} getImgUrl={getImgUrl} onEdit={() => onStartEdit(ev)} onDelete={() => onDelete(ev._id)} onShare={onShare} onViewDetails={onViewDetails} />
+                        ))}
+                        {filteredEvents.filter(ev => ev.organizer?._id === profile?._id).length === 0 && (
+                            <div className="panel" style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>No personal events found.</div>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {showGlobal && (
+                <>
+                    <h3 style={{ marginTop: 40, marginBottom: 16 }}>Global Event Moderation</h3>
+                    <div className="grid">
+                        {filteredEvents.filter(ev => ev.organizer?._id !== profile?._id).map(ev => (
+                            <EventCard key={ev._id} ev={ev} profile={profile} getImgUrl={getImgUrl} onEdit={null} onDelete={() => onDelete(ev._id)} onShare={onShare} onViewDetails={onViewDetails} />
+                        ))}
+                        {filteredEvents.filter(ev => ev.organizer?._id !== profile?._id).length === 0 && (
+                            <div className="panel" style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>No events found in moderation.</div>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

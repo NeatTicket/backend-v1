@@ -7,7 +7,13 @@ export function VenueCard({ p, profile, getImgUrl, onEdit, onDelete, onSelect })
     const canManage = profile && (isAdmin || isOwner);
 
     return (
-        <div className="panel" style={{ opacity: (p.status === "approved" || isAdmin) ? 1 : 0.85, borderColor: p.status === "approved" ? 'var(--border)' : p.status === "rejected" ? 'var(--bad)' : 'rgba(251,191,36,0.4)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="panel" style={{
+            opacity: (p.status === "approved" || isAdmin) ? 1 : 0.85,
+            borderColor: p.status === "approved" ? 'var(--border)' : p.status === "rejected" ? 'var(--bad)' : 'rgba(251,191,36,0.4)',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%'
+        }}>
             <div className="card-img-container" onClick={onSelect} style={{ cursor: 'pointer', height: 180, flexShrink: 0, background: 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {p.images?.[0] || p.image ? (
                     <img src={getImgUrl(p.images?.[0] || p.image)} alt={p.name} className="card-img" />
@@ -35,8 +41,8 @@ export function VenueCard({ p, profile, getImgUrl, onEdit, onDelete, onSelect })
                     }} title={p.name}>{p.name}</h3>
                     {canManage && (
                         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                            <button className="theme-toggle" onClick={onEdit}><Icon.Edit style={{ width: 14, height: 14 }} /></button>
-                            <button className="theme-toggle" style={{ color: 'var(--bad)' }} onClick={onDelete}><Icon.Trash style={{ width: 14, height: 14 }} /></button>
+                            {onEdit && <button className="theme-toggle" onClick={onEdit}><Icon.Edit style={{ width: 14, height: 14 }} /></button>}
+                            {onDelete && <button className="theme-toggle" style={{ color: 'var(--bad)' }} onClick={onDelete}><Icon.Trash style={{ width: 14, height: 14 }} /></button>}
                         </div>
                     )}
                 </div>
@@ -59,7 +65,12 @@ export function VenueCard({ p, profile, getImgUrl, onEdit, onDelete, onSelect })
                     }}>{p.description || 'No description provided.'}</p>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-                    <div className="badge accent-badge" style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.location}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div className="badge accent-badge" style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.location}</div>
+                        {isAdmin && p.owner && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600 }}>By: {p.owner.firstName}</div>
+                        )}
+                    </div>
                     <button className="btn btn-sm btn-ghost" style={{ fontSize: '0.72rem', height: 'auto', padding: '6px 12px' }} onClick={onSelect}>View Details</button>
                 </div>
             </div>
@@ -70,8 +81,8 @@ export function VenueCard({ p, profile, getImgUrl, onEdit, onDelete, onSelect })
 export function EventCard({ ev, profile, onEdit, onDelete, onBook, onShare, onViewDetails, getTicketStatusBadge, getImgUrl }) {
     const isAdmin = profile?.role === "admin";
     const organizerId = ev.organizer?._id || ev.organizer;
-    const isOrganizer = profile?._id && organizerId && organizerId.toString() === profile._id.toString();
-    const canManage = profile && (isAdmin || isOrganizer);
+    const isOwner = profile?._id && organizerId && organizerId.toString() === profile._id.toString();
+    const canManage = profile && (isAdmin || isOwner);
 
     return (
         <div className="panel" style={{ position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%', padding: 24 }}>
@@ -129,13 +140,18 @@ export function EventCard({ ev, profile, onEdit, onDelete, onBook, onShare, onVi
                     {ev.date ? new Date(ev.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Date TBA'}
                 </div>
 
-                <div style={{ fontSize: "0.85rem", opacity: 0.8, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Icon.Place style={{ width: 14, height: 14 }} />
-                    <span style={{
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                    }}><strong>{ev.displayLocation || 'Location TBA'}</strong></span>
+                <div style={{ fontSize: "0.85rem", opacity: 0.8, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Icon.Place style={{ width: 14, height: 14 }} />
+                        <span style={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                        }}><strong>{ev.displayLocation || 'Location TBA'}</strong></span>
+                    </div>
+                    {isAdmin && ev.organizer && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600 }}>By: {ev.organizer.firstName || "Owner"}</div>
+                    )}
                 </div>
 
                 {canManage && ev.status === "rejected" && ev.rejectionReason && (

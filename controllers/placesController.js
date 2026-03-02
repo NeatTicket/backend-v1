@@ -185,10 +185,9 @@ const updatePlace = asyncWrapper(async (req, res, next) => {
 
 
   const isOwner = place.owner.toString() === req.user._id.toString();
-  const isAdmin = req.user.role === "admin";
 
-  if (!isOwner && !isAdmin) {
-    return next(new AppError("Not authorized to update this place", 403, httpStatusText.FAIL));
+  if (!isOwner) {
+    return next(new AppError("Only the owner can update this place", 403, httpStatusText.FAIL));
   }
 
   const { name, description, location, capacity } = req.body;

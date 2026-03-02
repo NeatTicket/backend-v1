@@ -9,27 +9,33 @@ export function Sidebar({ view, changeView, profile, authHeadersExist, clearSess
             </div>
 
             <nav className="nav-links">
-                <div className={`nav-link ${view === "overview" ? "active" : ""}`} onClick={() => changeView("overview")}><Icon.Home /> Overview</div>
-                <div className={`nav-link ${view === "events" ? "active" : ""}`} onClick={() => changeView("events")}><Icon.Event /> Explore Events</div>
-                <div className={`nav-link ${view === "places" ? "active" : ""}`} onClick={() => changeView("places")}><Icon.Place /> Explore Venues</div>
+                <div className={`nav-link ${view === "overview" ? "active" : ""}`} onClick={() => changeView("overview")}><Icon.Home /> Dashboard</div>
+                <div className={`nav-link ${view === "events" ? "active" : ""}`} onClick={() => changeView("events")}><Icon.Compass /> Discover Events</div>
+                <div className={`nav-link ${view === "places" ? "active" : ""}`} onClick={() => changeView("places")}><Icon.Map /> Discover Venues</div>
 
-                {authHeadersExist && (profile?.role === "admin" || profile?.role === "place_owner") && (
+                {authHeadersExist && profile?.role === "admin" && (
+                    <>
+                        <div style={{ margin: "10px 0 5px", padding: "0 14px", fontSize: "0.7rem", color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", opacity: 0.6 }}>Administration</div>
+                        <div className={`nav-link ${view === "users" ? "active" : ""}`} onClick={() => changeView("users")}><Icon.Shield /> Provider Review</div>
+                        <div className={`nav-link ${view === "admin_venues" ? "active" : ""}`} onClick={() => changeView("admin_venues")}><Icon.Map /> Global Venues</div>
+                        <div className={`nav-link ${view === "admin_events" ? "active" : ""}`} onClick={() => changeView("admin_events")}><Icon.Event /> Global Events</div>
+                    </>
+                )}
+
+                {authHeadersExist && (profile?.role === "place_owner" || profile?.role === "admin") && (
                     <div className={`nav-link ${view === "my_venues" ? "active" : ""}`} onClick={() => changeView("my_venues")}><Icon.Place /> My Venues</div>
                 )}
 
-                {authHeadersExist && (profile?.role === "admin" || profile?.role === "event_organizer") && (
-                    <div className={`nav-link ${view === "my_events" ? "active" : ""}`} onClick={() => changeView("my_events")}><Icon.Event /> Manage Events</div>
+                {authHeadersExist && (profile?.role === "event_organizer" || profile?.role === "admin") && (
+                    <div className={`nav-link ${view === "my_events" ? "active" : ""}`} onClick={() => changeView("my_events")}><Icon.Event /> My Events</div>
                 )}
 
                 {authHeadersExist && <div className={`nav-link ${view === "tickets" ? "active" : ""}`} onClick={() => changeView("tickets")}><Icon.Ticket /> My Tickets</div>}
 
-                {authHeadersExist && profile?.role === "admin" && (
-                    <div className={`nav-link ${view === "users" ? "active" : ""}`} onClick={() => changeView("users")}><Icon.User /> User Management</div>
-                )}
 
                 {authHeadersExist && (
                     <div className={`nav-link ${view === "profile" ? "active" : ""}`} onClick={() => changeView("profile")} style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
-                        Profile Settings
+                        Account Settings
                     </div>
                 )}
 
