@@ -6,6 +6,7 @@ const validate = require("../middlewares/validate");
 const { validateUser } = require("../validators/userValidation");
 const {
   getAllUsers,
+  getRegularUsers,
   getUserById,
   createUser,
   updateUserRole,
@@ -25,6 +26,7 @@ const router = express.Router();
  * @access  Private (Only admins can access all users)
  */
 router.get("/", protect, authorize(["admin"]), getAllUsers);
+router.get("/regular", protect, authorize(["admin"]), getRegularUsers);
 
 /**
  * @route   GET /users/operators

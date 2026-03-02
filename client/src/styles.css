@@ -1026,9 +1026,9 @@ body {
 
 .place-primary-actions {
   display: flex;
-  gap: 22px;
+  gap: 10px;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .place-primary-actions .place-action-btn {

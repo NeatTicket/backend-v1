@@ -6,6 +6,11 @@ const mongoose = require("mongoose");
 const AppError = require("../utils/appError");
 const notify = require("../utils/notify");
 
+const toDataUrl = (file) => {
+  if (!file?.buffer || !file?.mimetype) return "";
+  return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+};
+
 // On startup: auto-approve any places owned by admin users (data migration)
 (async () => {
   try {
@@ -49,7 +54,7 @@ const createPlace = asyncWrapper(async (req, res, next) => {
 
   let imageUrls = [];
   if (req.files && req.files.length > 0) {
-    imageUrls = req.files.map(file => `/${file.path.replace(/\\/g, "/")}`);
+    imageUrls = req.files.map(toDataUrl).filter(Boolean);
   }
 
   const isAdmin = req.user.role === "admin";
@@ -135,7 +140,7 @@ const getAllPlaces = asyncWrapper(async (req, res) => {
   const selectedSort = sortMap[sort] || sortMap.createdAt;
 
   const [places, total] = await Promise.all([
-    Place.find(filter).populate("owner", "firstName lastName email").sort(selectedSort).limit(safeLimit).skip(skip),
+    Place.find(filter).populate("owner", "firstName lastName").sort(selectedSort).limit(safeLimit).skip(skip),
     Place.countDocuments(filter),
   ]);
 
@@ -161,7 +166,7 @@ const getPlaceById = asyncWrapper(async (req, res, next) => {
     return next(new AppError("Invalid place id", 400, httpStatusText.FAIL));
   }
 
-  const place = await Place.findById(placeId).populate("owner", "firstName lastName email");
+  const place = await Place.findById(placeId).populate("owner", "firstName lastName");
   if (!place) {
     return next(new AppError("Place not found", 404, httpStatusText.FAIL));
   }
@@ -198,7 +203,7 @@ const updatePlace = asyncWrapper(async (req, res, next) => {
   if (capacity !== undefined) place.capacity = capacity;
 
   if (req.files && req.files.length > 0) {
-    place.images = req.files.map(file => `/${file.path.replace(/\\/g, "/")}`);
+    place.images = req.files.map(toDataUrl).filter(Boolean);
   }
 
   // If the place was rejected, and the owner is updating it, set status back to pending

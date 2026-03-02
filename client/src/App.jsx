@@ -90,6 +90,7 @@ export default function App() {
   const [searchCategory, setSearchCategory] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
   const [operators, setOperators] = useState([]);
+  const [regularUsers, setRegularUsers] = useState([]);
   const [profileForm, setProfileForm] = useState({ firstName: "", lastName: "", email: "", password: "", confirmPassword: "", profileImage: "" });
   const [editingPlaceId, setEditingPlaceId] = useState(null);
   const [editingEventId, setEditingEventId] = useState(null);
@@ -107,7 +108,10 @@ export default function App() {
 
   const getImgUrl = (url) => {
     if (!url) return "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800";
-    if (url.startsWith("http")) return url;
+    if (url.startsWith("http") || url.startsWith("data:image")) return url;
+    if (url.startsWith("/uploads/") && typeof window !== "undefined" && /vercel\.app$/i.test(window.location.hostname)) {
+      return "https://www.freeiconspng.com/uploads/no-image-icon-4.png";
+    }
     const base = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace("/api", "");
     return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
   };
@@ -266,6 +270,7 @@ export default function App() {
 
   useEffect(() => {
     if (view === "users" && authHeadersExist && profile?.role === "admin") axiosInstance.get("/users/operators").then(res => setOperators(res.data?.data?.operators || []));
+    if (view === "admin_users" && authHeadersExist && profile?.role === "admin") axiosInstance.get("/users/regular").then(res => setRegularUsers(res.data?.data?.users || []));
   }, [view, authHeadersExist, profile]);
 
   return (
@@ -477,6 +482,74 @@ export default function App() {
                       }).length === 0) && (
                           <tr><td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)' }}>No providers found.</td></tr>
                         )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          )}
+          {view === "admin_users" && profile?.role === "admin" && (
+            <div className="animate-fade-in">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Regular Users</h2>
+              </div>
+
+              <section className="panel" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table" style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
+                    <thead style={{ background: 'var(--panel-hover)', borderBottom: '1px solid var(--border)' }}>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Joined</th>
+                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody style={{ background: 'var(--panel)' }}>
+                      {regularUsers
+                        .filter(u => {
+                          const s = search.toLowerCase();
+                          return !search || `${u.firstName} ${u.lastName}`.toLowerCase().includes(s) || u.email.toLowerCase().includes(s);
+                        })
+                        .map(u => {
+                          const joinDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'New';
+                          return (
+                            <tr key={u._id} style={{ borderBottom: '1px solid var(--border)' }}>
+                              <td style={{ padding: '16px 20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                  <div className="profile-avatar" style={{ width: 44, height: 44, borderRadius: 12, border: '2px solid var(--accent-soft)', flexShrink: 0 }}>
+                                    <img src={getImgUrl(u.profileImage)} alt="avatar" />
+                                  </div>
+                                  <div>
+                                    <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{u.firstName} {u.lastName}</div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{u.email}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '16px 20px' }}>
+                                <span className={`status-badge ${u.isApproved ? 'approved' : 'pending'}`} style={{ fontSize: '0.65rem' }}>
+                                  {u.isApproved ? 'ACTIVE' : 'PENDING'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--muted)' }}>{joinDate}</td>
+                              <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                <button
+                                  className="btn btn-sm"
+                                  style={{ background: 'var(--bad-soft)', color: 'var(--bad)', border: 'none', width: 32, height: 32, padding: 0, borderRadius: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                  onClick={() => run(() => axiosInstance.delete(`/users/${u._id}`).then(() => axiosInstance.get("/users/regular").then(res => setRegularUsers(res.data?.data?.users || []))))}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      {(regularUsers.length === 0 || regularUsers.filter(u => {
+                        const s = search.toLowerCase();
+                        return !search || `${u.firstName} ${u.lastName}`.toLowerCase().includes(s) || u.email.toLowerCase().includes(s);
+                      }).length === 0) && (
+                        <tr><td colSpan="4" style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)' }}>No regular users found.</td></tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

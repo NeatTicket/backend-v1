@@ -7,6 +7,11 @@ const mongoose = require("mongoose");
 const AppError = require("../utils/appError");
 const notify = require("../utils/notify");
 
+const toDataUrl = (file) => {
+  if (!file?.buffer || !file?.mimetype) return "";
+  return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+};
+
 const getAllEvents = asyncWrapper(async (req, res) => {
   const {
     search = "",
@@ -80,7 +85,7 @@ const getAllEvents = asyncWrapper(async (req, res) => {
   const [events, total] = await Promise.all([
     Event.find(filter, { __v: false })
       .populate("place", "name location owner")
-      .populate("organizer", "firstName lastName email profileImage")
+      .populate("organizer", "firstName lastName profileImage")
 
       .sort(selectedSort)
       .limit(safeLimit)
@@ -115,7 +120,7 @@ const getEvent = asyncWrapper(async (req, res, next) => {
 
   const event = await Event.findById(eventId)
     .populate("place", "name location")
-    .populate("organizer", "firstName lastName email profileImage");
+    .populate("organizer", "firstName lastName profileImage");
 
   if (!event) {
     return next(new AppError("Event not found", 404, httpStatusText.FAIL));
@@ -183,7 +188,7 @@ const addEvent = asyncWrapper(async (req, res, next) => {
 
   let imageUrls = [];
   if (req.files && req.files.length > 0) {
-    imageUrls = req.files.map(file => `/${file.path.replace(/\\/g, "/")}`);
+    imageUrls = req.files.map(toDataUrl).filter(Boolean);
   }
 
   const newEvent = new Event({
@@ -258,7 +263,7 @@ const updateEvent = asyncWrapper(async (req, res, next) => {
   if (req.body.name !== undefined) updateFields.name = req.body.name;
   if (req.body.description !== undefined) updateFields.description = req.body.description;
   if (req.files && req.files.length > 0) {
-    updateFields.images = req.files.map(file => `/${file.path.replace(/\\/g, "/")}`);
+    updateFields.images = req.files.map(toDataUrl).filter(Boolean);
   }
   if (req.body.maxTickets !== undefined) updateFields.maxTickets = Number(req.body.maxTickets);
   if (req.body.date !== undefined) {
@@ -273,7 +278,7 @@ const updateEvent = asyncWrapper(async (req, res, next) => {
     eventId,
     { $set: updateFields },
     { new: true, runValidators: true }
-  ).populate("place", "name location").populate("organizer", "firstName lastName email");
+  ).populate("place", "name location").populate("organizer", "firstName lastName");
 
   res.status(200).json({ status: httpStatusText.SUCCESS, data: { event: updatedEvent } });
 });

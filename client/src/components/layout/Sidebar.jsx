@@ -25,6 +25,7 @@ export function Sidebar({ view, changeView, profile, authHeadersExist, clearSess
                         <>
                             <div style={{ margin: "10px 0 5px", padding: "0 14px", fontSize: "0.7rem", color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", opacity: 0.6 }}>Administration</div>
                             <div className={`nav-link ${view === "users" ? "active" : ""}`} onClick={() => go("users")}><Icon.Shield /> Provider Review</div>
+                            <div className={`nav-link ${view === "admin_users" ? "active" : ""}`} onClick={() => go("admin_users")}><Icon.User /> Regular Users</div>
                             <div className={`nav-link ${view === "admin_venues" ? "active" : ""}`} onClick={() => go("admin_venues")}><Icon.Map /> Global Venues</div>
                             <div className={`nav-link ${view === "admin_events" ? "active" : ""}`} onClick={() => go("admin_events")}><Icon.Event /> Global Events</div>
                         </>

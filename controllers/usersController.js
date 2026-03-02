@@ -8,6 +8,11 @@ const httpStatusText = require("../utils/httpStatusText");
 
 const allowedRoles = ["user", "place_owner", "event_organizer", "admin"];
 
+const toDataUrl = (file) => {
+  if (!file?.buffer || !file?.mimetype) return "";
+  return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+};
+
 const ensureSelfOrAdmin = (requestUser, targetUserId) => {
   return requestUser.role === "admin" || requestUser._id.toString() === targetUserId.toString();
 };
@@ -40,6 +45,11 @@ const getOperators = asyncWrapper(async (req, res) => {
  */
 const getAllUsers = asyncWrapper(async (req, res, next) => {
   const users = await User.find().select("-password");
+  res.json({ status: "SUCCESS", data: { users } });
+});
+
+const getRegularUsers = asyncWrapper(async (req, res, next) => {
+  const users = await User.find({ role: "user" }).select("-password");
   res.json({ status: "SUCCESS", data: { users } });
 });
 
@@ -177,7 +187,7 @@ const uploadProfileImage = asyncWrapper(async (req, res, next) => {
   }
 
   if (req.file) {
-    user.profileImage = `/${req.file.path.replace(/\\/g, "/")}`;
+    user.profileImage = toDataUrl(req.file);
     await user.save();
   }
 
@@ -234,7 +244,7 @@ const updateProfile = asyncWrapper(async (req, res, next) => {
   if (email !== undefined) user.email = email;
 
   if (req.file) {
-    user.profileImage = `/${req.file.path.replace(/\\/g, "/")}`;
+    user.profileImage = toDataUrl(req.file);
   }
 
   if (password && password.trim() !== "") {
@@ -253,6 +263,7 @@ const updateProfile = asyncWrapper(async (req, res, next) => {
 
 module.exports = {
   getAllUsers,
+  getRegularUsers,
   getUserById,
   createUser,
   updateUserRole,
@@ -264,4 +275,3 @@ module.exports = {
   updateProfile,
   getOperators,
 };
-

@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 const app = express();
 
 connectDB();
@@ -52,7 +53,10 @@ app.use(mongoSanitize());
 
 // 6. Data sanitization against XSS
 app.use(xss());
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/uploads", (req, res) => {
+  res.redirect("https://www.freeiconspng.com/uploads/no-image-icon-4.png");
+});
 
 // Routes
 const usersRouter = require('./routes/usersRouter');

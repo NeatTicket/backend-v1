@@ -14,18 +14,18 @@ export function Header({
                 <button className="theme-toggle mobile-sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle sidebar menu">
                     {isSidebarOpen ? <Icon.X /> : <Icon.Menu />}
                 </button>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-                    {view === "event_details" ? "Event Details" : view === "place_details" ? "Venue Details" : view.charAt(0).toUpperCase() + view.slice(1).replace("Mgmt", "Management").replace("_", " ")}
-                </h2>
-                {profile && (
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        <span className={`role-badge role-${profile.role}`} style={{ fontSize: '0.65rem' }}>{profile.role.replace('_', ' ')}</span>
-                        <span className={`status-badge ${profile.isApproved ? "approved" : "pending"}`} style={{ fontSize: '0.65rem' }}>
-                            {profile.isApproved ? "Verified" : "Pending"}
-                        </span>
-                    </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.25rem', lineHeight: 1.2 }}>
+                        {view === "event_details" ? "Event Details" : view === "place_details" ? "Venue Details" : view.charAt(0).toUpperCase() + view.slice(1).replace("Mgmt", "Management").replace("_", " ")}
+                    </h2>
+                    {profile && (
+                        <>
+                            <span className={`role-badge role-${profile.role}`} style={{ fontSize: '0.65rem' }}>{profile.role.replace('_', ' ')}</span>
+                            <span className={`status-badge ${profile.isApproved ? "approved" : "pending"}`} style={{ fontSize: '0.65rem' }}>
+                                {profile.isApproved ? "Verified" : "Pending"}
+                            </span>
+                        </>
+                    )}
                 </div>
             </div>
 
