@@ -209,6 +209,30 @@ export default function App() {
     });
   };
 
+  const handleStartEventFromPlace = (place) => {
+    if (!profile) {
+      setError("Please sign in first. Only event organizers can create venue events.");
+      changeView("login");
+      return;
+    }
+
+    const canCreateEvent = profile.role === "event_organizer" || profile.role === "admin";
+    if (!canCreateEvent) {
+      setError("You are not allowed to create events for venues. Switch to an Event Organizer account.");
+      return;
+    }
+
+    setEditingEventId(null);
+    setEventForm({
+      ...initialEvent,
+      place: place?._id || "",
+      isCustomLocation: false,
+      locationName: "",
+    });
+    changeView("my_events");
+    setMessage(`Create your event for "${place?.name || "this venue"}".`);
+  };
+
   const openPlaceDetails = (place) => {
     if (!place?._id) return;
     navigate(`/places/${place._id}`);
@@ -316,6 +340,7 @@ export default function App() {
               profile={profile}
               getImgUrl={getImgUrl}
               onShare={handleShare}
+              onCreateEventAtVenue={handleStartEventFromPlace}
               onEdit={(p) => { setEditingPlaceId(p._id); setPlaceForm(p); changeView("my_venues"); }}
               onDelete={(id) => { setDeleteId(id); setDeleteType("place"); setIsDeleteModalOpen(true); }}
               changeView={changeView}

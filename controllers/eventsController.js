@@ -127,6 +127,11 @@ const getEvent = asyncWrapper(async (req, res, next) => {
 const addEvent = asyncWrapper(async (req, res, next) => {
   const { place, name, description, date, maxTickets, locationName } = req.body;
 
+  // Defense in depth: role check is also enforced at route level.
+  if (!["event_organizer", "admin"].includes(req.user?.role)) {
+    return next(new AppError("Only event organizers can create events.", 403, httpStatusText.FAIL));
+  }
+
   if (!name || !description || !date) {
     return next(new AppError("name, description and date are required", 400, httpStatusText.FAIL));
   }
@@ -151,6 +156,11 @@ const addEvent = asyncWrapper(async (req, res, next) => {
 
     finalPlace = place;
     isPlaceOwner = foundPlace.owner.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === "admin";
+    const isVenueBookable = foundPlace.status === "approved" || isPlaceOwner || isAdmin;
+    if (!isVenueBookable) {
+      return next(new AppError("This venue is not available for booking right now.", 403, httpStatusText.FAIL));
+    }
     status = isPlaceOwner ? "approved" : "pending";
 
     // Slot collision check for venues
@@ -343,4 +353,3 @@ module.exports = {
   deleteEvent,
   approveEvent,
 };
-

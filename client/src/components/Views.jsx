@@ -260,7 +260,7 @@ export function EventDetailsView({ eventId, profile, getImgUrl, onBook, onShare,
     );
 }
 
-export function PlaceDetailsView({ placeId, profile, getImgUrl, onShare, onEdit, onDelete, changeView }) {
+export function PlaceDetailsView({ placeId, profile, getImgUrl, onShare, onCreateEventAtVenue, onEdit, onDelete, changeView }) {
     const fetcher = (url) => axiosInstance.get(url).then(res => res.data.data);
     const { data, error, isLoading } = useSWR(placeId ? `/places/${placeId}` : null, fetcher);
     const place = data?.place;
@@ -294,6 +294,13 @@ export function PlaceDetailsView({ placeId, profile, getImgUrl, onShare, onEdit,
                 <div style={{ display: 'flex', gap: 12 }}>
                     <button className="btn btn-primary" style={{ height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => onShare(place, "venue")}>
                         <Icon.Share style={{ width: 14, height: 14 }} /> Share Venue
+                    </button>
+                    <button
+                        className="btn btn-sm btn-ghost"
+                        style={{ height: 40, borderRadius: 12, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}
+                        onClick={() => onCreateEventAtVenue?.(place)}
+                    >
+                        <Icon.Event style={{ width: 14, height: 14 }} /> Create Event Here
                     </button>
                     {canManage && (
                         <>
