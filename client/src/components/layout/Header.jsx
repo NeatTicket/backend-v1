@@ -28,7 +28,7 @@ export function Header({
                     <Icon.Compass style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 18, height: 18, color: 'var(--accent)', opacity: 0.6 }} />
                     <input
                         type="text"
-                        placeholder={`Search ${searchCategory === "all" ? "everything" : searchCategory}...`}
+                        placeholder={`Search everything...`}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         style={{
@@ -43,33 +43,6 @@ export function Header({
                         }}
                     />
                 </div>
-                <select
-                    value={searchCategory}
-                    onChange={e => {
-                        const val = e.target.value;
-                        if (setSearchCategory) setSearchCategory(val);
-                        if (val === "events") changeView("events");
-                        else if (val === "venues") changeView("places");
-                        else if (val === "owners" && profile?.role === "admin") changeView("users");
-                    }}
-                    style={{
-                        padding: '10px 14px',
-                        borderRadius: 12,
-                        background: 'var(--panel-hover)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--ink)',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        outline: 'none',
-                        minWidth: 100
-                    }}
-                >
-                    <option value="all">All</option>
-                    <option value="events">Events</option>
-                    <option value="venues">Venues</option>
-                    {profile?.role === "admin" && <option value="owners">Providers</option>}
-                </select>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
